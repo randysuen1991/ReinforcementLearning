@@ -12,11 +12,14 @@ This file consists three parts:
 class MultikeysDict(object):
     """ A dictionary that allows multiple keys for one value """
 
+    # If init is true, then give arbitrary values into it.
+#    def __init__(self,keys1,keys2,init=True):
     def __init__(self):
         self.keys = {}
         self.values = {}
         
     def __setitem__(self, key, value):
+        print(key,value)
         if key not in self.keys :  
             if value not in self.values:    # it's a new value
                 self.keys[key] = set()      # a new set
@@ -37,7 +40,7 @@ class MultikeysDict(object):
                 self.values[value].add(key)
                 
                 
-    def update(self, key, old_value, new_value):
+    def Update(self, key, old_value, new_value):
         if old_value in self.keys[key]:
             affected_keys = self.values[old_value]
             for key in affected_keys:
@@ -78,16 +81,17 @@ class MultikeysDict(object):
         elif len(values) == 1:
             return list(values)[0]
         
-    def iterload(self, key_list, value_list):
+    def Iterload(self, key_list, value_list):
         for key in key_list:
             for value in value_list:
                 self.__setitem__(key, value)
 
 
-# The following two functions return numpy object.
-def Q_Generator(state_size,action_size,random=True):
+# The following two functions return Multikeys object.
+# The input argument states and actions should be two lists. 
+def Q_Generator(states,actions,random=True):
     if random :
-        return 
+        return MultikeysDict(states,actions,init=True)
     
     
 def V_Generator(state_size,random=True):
@@ -97,17 +101,25 @@ def V_Generator(state_size,random=True):
     
 
 class ReinforcementLearningAlgorithm():
-    def Qlearning(state_size,action_size,decay_rate,epsilon):
-        Q = Q_Generator(state_size,action_size)
-        
+    def Qlearning(states,actions,env,episodes_size,decay_rate=0.1,learning_rate=0.01,epsilon=0.05):
+        Q = Q_Generator(states,actions)
+#        state = 
+        while True:
+            action = max(Q[state],key=Q[state].get)
+            new_state, r, done, _  = env.Step(action)
+            new_action = max(Q[new_state],key=Q[state].get)
+            Q[state,action] = Q[state,action] + learning_rate * (r + decay_rate * Q[new_state,new_action] - Q[state,action])
+            state = new_state
+            if done :
+                break
     
-    def Sarsa():
+    def Sarsa(states,actions,env,episodes_size):
         pass
 
 
 
 class ReinforcementModel():
-    def __init__(self):
+    def __init__(self,env):
         pass
     
     def Fit(self):
@@ -116,5 +128,6 @@ class ReinforcementModel():
     def Predict(self):
         pass
     
-    
-    
+if __name__ == '__main__' :
+    d = MultikeysDict()
+    d['t']['u'] = 5
