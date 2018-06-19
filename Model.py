@@ -33,15 +33,17 @@ class QTable():
 
 
 class ReinforcementLearningModel():
-    def __init__(self,states,actions,env,episodes_size,decay_rate=0.1,learning_rate=0.01,epsilon=0.05):
+    def __init__(self,states,actions,env,episodes_size,features_size,decay_rate=0.1,learning_rate=0.01,epsilon=0.05):
         self.states = states
         self.actions = actions
         self.env = env
         self.episodes_size = episodes_size
         self.decay_rate = decay_rate
         self.learning_rate = learning_rate
+        self.actions_size = len(self.actions)
         self.epsilon = epsilon
-        self.Q = Q_Generator(states,actions)
+        self.features_size = features_size
+        
         
     def Predict(self):
         raise NotImplementedError
@@ -53,7 +55,7 @@ class ReinforcementLearningModel():
 class QLearning(ReinforcementLearningModel):
     def __init__(self,states,actions,env,episodes_size,decay_rate=0.1,learning_rate=0.01,epsilon=0.05):
         super().__init__(states,actions,env,episodes_size,decay_rate,learning_rate,epsilon)
-        
+        self.Q = QTable(states,actions)
         
     def Fit(self):
         for _ in range(self.episodes_size):
@@ -87,31 +89,28 @@ class Sarsa(ReinforcementLearningModel):
     
 class DeepQLearning(ReinforcementLearningModel):
     def __init__(self,states,actions,env,episodes_size,replace_target_size,
-                 memory_size, batch_size,
+                 features_size, memory_size, batch_size,
                  decay_rate=0.1,learning_rate=0.01,epsilon=0.05,default=True):
         super().__init__(states,actions,env,episodes_size,decay_rate,learning_rate,epsilon)
         self.replace_target_size = replace_target_size
-        self.memory_size
+        self.memory_size = memory_size
         # the batch_size means how many data we would take from the memory.
         self.batch_size = batch_size
-        self.memory = np.zeros((self.memory_size,))
+        self.memory = np.zeros((self.memory_size, 2 * self.features_size + 2))
+        # A deep Q model gets its own session.
+        self.sess = tf.Session()
         if default :
             self._Construct_DefaultModels()
     
     def _Construct_DefaultModels(self):
         
-        
-        
         self.eval_model = NNM.NeuralNetworkModel()
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=len(self.actions)))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=20))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=15))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=10))
         
         # target model and eval model share the same structure.
         self.targ_model = cp.deepcopy(self.eval_model)
-        
-        
-        
         
     
     def Fit(self):
@@ -122,7 +121,7 @@ class DeepQLearning(ReinforcementLearningModel):
             action = self.Predict(state)
             state_, reward, done = self.env.Step(action)
             if (step > 200) and (step % 5 == 0) :
-                self.model.
+                pass
             state = state_
             step += 1
             
@@ -147,8 +146,19 @@ class DeepQLearning(ReinforcementLearningModel):
             sample_index = np.random.choice(self.memory_counter,size=self.batch_size)
         batch_memory = self.memory[sample_index,:]
         
-        new_q = self.targ_model.sess.run()
-        eval_q = self.eval_model.sess.run()
+        self.eval_model.Compile(X_train=batch_memory[:,self.n_features],optimizer=tf.train.RMSPropOptimizer,loss_fun=NNL.NeuralNetworkLoss.MeanSqaured)
+        self.targ_model.Compile(X_train=batch_memory[:,-self.n_features],loss_and_optimize=False)
+        
+        q_next, q_eval = self.sess.run([self.targ_model.output, self.eval_model.output])
+        
+        q_target = q_eval.copy()
+        
+        batch_index = np.arange(self.batch_size, dtype=np.int32)
+        eval_act_index = batch_memory[:, self.n_features].astype(int)
+        reward = batch_memory[:, self.n_features + 1]
+        
+        q_target[batch_index, eval_act_index] = reward + self.gamma * np.max(q_next, axis=1)
+        
         
         
     
