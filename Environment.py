@@ -12,3 +12,10 @@ class Environment():
     def Step(self,action):
         raise NotImplementedError()
     
+class MarketEnv(Environment):
+    def __init__(self):
+        super().__init__()
+    def Reset(self):
+        pass
+    def Step(self,action):
+        pass
