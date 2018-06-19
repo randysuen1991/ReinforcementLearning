@@ -88,8 +88,8 @@ class Sarsa(ReinforcementLearningModel):
         super().__init__(states,actions,env,episodes_size,decay_rate,learning_rate,epsilon)
     
 class DeepQLearning(ReinforcementLearningModel):
-    def __init__(self,states,actions,env,episodes_size,replace_target_size,
-                 features_size, memory_size, batch_size,
+    def __init__(self,states,actions,env,episodes_size,
+                 features_size, memory_size, batch_size,replace_target_size=300,
                  decay_rate=0.1,learning_rate=0.01,epsilon=0.05,default=True):
         super().__init__(states,actions,env,episodes_size,decay_rate,learning_rate,epsilon)
         self.replace_target_size = replace_target_size
@@ -99,9 +99,17 @@ class DeepQLearning(ReinforcementLearningModel):
         self.memory = np.zeros((self.memory_size, 2 * self.features_size + 2))
         # A deep Q model gets its own session.
         self.sess = tf.Session()
+        self.cost_history = list()
+        self.learn_step_counter = 0
+        
+        
         if default :
             self._Construct_DefaultModels()
-    
+            
+        # Define replace_target_op here.
+        
+            
+        
     def _Construct_DefaultModels(self):
         
         self.eval_model = NNM.NeuralNetworkModel()
@@ -140,16 +148,22 @@ class DeepQLearning(ReinforcementLearningModel):
         pass
     
     def _Learn(self):
+        
+        if self.learn_step_counter % self.replace_target_iter == 0:
+            self.sess.run(self.replace_target_op)
+            print('\ntarget_params_replaced\n')
+        
         if self.memory_counter > self.memory_size :
             sample_index = np.random.choice(self.memory_size,size=self.batch_size)
         else :
             sample_index = np.random.choice(self.memory_counter,size=self.batch_size)
         batch_memory = self.memory[sample_index,:]
         
-        self.eval_model.Compile(X_train=batch_memory[:,self.n_features],optimizer=tf.train.RMSPropOptimizer,loss_fun=NNL.NeuralNetworkLoss.MeanSqaured)
-        self.targ_model.Compile(X_train=batch_memory[:,-self.n_features],loss_and_optimize=False)
+        self.eval_model.Compile(X_train_shape=batch_memory[:,:self.n_features].shape,optimizer=tf.train.RMSPropOptimizer,loss_fun=NNL.NeuralNetworkLoss.MeanSqaured)
+        self.targ_model.Compile(X_train_shape=batch_memory[:,-self.n_features:].shape,loss_and_optimize=False)
         
-        q_next, q_eval = self.sess.run([self.targ_model.output, self.eval_model.output])
+        q_next, q_eval = self.sess.run([self.targ_model.output, self.eval_model.output],feed_dict={self.targ_model.input:batch_memory[:,-self.n_features:],
+                                       self.eval_model.input:batch_memory[:,:self.n_features]})
         
         q_target = q_eval.copy()
         
@@ -159,6 +173,9 @@ class DeepQLearning(ReinforcementLearningModel):
         
         q_target[batch_index, eval_act_index] = reward + self.gamma * np.max(q_next, axis=1)
         
+        _, self.cost = self.sess.run([self.eval_model.train, self.eval_model.loss],
+                                     feed_dict={self.s: batch_memory[:, :self.n_features],
+                                                self.q_target : q_target})
         
         
-    
+        self.cost_history.append(self.cost)
