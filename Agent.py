@@ -6,18 +6,34 @@ class MetaAgent(type):
         return type.__new__(meta,name,bases,class_dict)
 
 class AbstractAgent(meta=MetaAgent):
-    pass
+    def __init__(self, states, actions):
+        self.states = states
+        self.actions = actions
+        self.states_size = len(states)
+        self.actions_size = len(actions)
+        self.current_state = None
+        self._iter = 0
+    
+    def Reset(self):
+        pass
+    
+    def Step(self,state):
+        raise NotImplementedError
+        
 # This is a abstract class for the agent.
 class Agent(AbstractAgent):
+    def __init__(self,states,actions):
+        super().__init__(states,actions)
+        
+    # This function should return the intial state of an episode.
+    def Reset(self):
+        pass
     
-    def __init__(self, state_size, action_size, model, epsilon):
-        self.state_size = state_size
-        self.action_size = action_size
-        self.model = model
-        self.epsilon = epsilon
+    # 
+    def Step(self,action):
+        pass
     
-    def Act(self,state):
-        raise NotImplementedError
+    
         
     
         

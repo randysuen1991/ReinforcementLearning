@@ -50,7 +50,9 @@ class ReinforcementLearningModel():
     
     def Fit(self):
         raise NotImplementedError
-    
+    def _Learn(self):
+        raise NotImplementedError
+        
     
 class QLearning(ReinforcementLearningModel):
     def __init__(self,states,actions,env,episodes_size,decay_rate=0.1,learning_rate=0.01,epsilon=0.05):
@@ -151,8 +153,8 @@ class DeepQLearning(ReinforcementLearningModel):
                 print('\ntarget_params_replaced\n')
             
     def Predict(self, state, epsilon=None) :
-        action = self.eval_model.Predict(X_test=state)
-        
+        actions = self.eval_model.Predict(X_test=state)
+        action = np.argmax(actions)
         try :
             if np.random.uniform(0,1) < 1 - epsilon + epsilon / len(self.actions) :
                 return action
@@ -199,12 +201,97 @@ class DeepQLearning(ReinforcementLearningModel):
         q_target[batch_index, eval_act_index] = reward + self.gamma * np.max(q_next, axis=1)
         
         _, self.cost = self.sess.run([self.eval_model.train, self.eval_model.loss],
-                                     feed_dict={self.s: batch_memory[:, :self.n_features],
-                                                self.q_target : q_target})
+                                     feed_dict={self.eval_model.input: batch_memory[:, :self.n_features],
+                                                self.eval_model.target: q_target})
         
         
         self.cost_history.append(self.cost)
         
         
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
-        self.learn_step_counter += 1
+        
+        
+class DoubleDeepQLearning(DeepQLearning):
+    def __init__(self,states,actions,env,episodes_size,
+                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
+                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True):
+        
+        super().__init__(states,actions,env,episodes_size,
+                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
+                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True)
+    
+    def _Learn(self):
+        if self.memory_counter > self.memory_size :
+            sample_index = np.random.choice(self.memory_size,size=self.batch_size)
+        else :
+            sample_index = np.random.choice(self.memory_counter,size=self.batch_size)
+            
+        batch_memory = self.memory[sample_index,:]
+        
+        self.eval_model.Compile(X_train_shape=batch_memory[:,:self.n_features].shape,optimizer=tf.train.RMSPropOptimizer,loss_fun=NNL.NeuralNetworkLoss.MeanSqaured)
+        self.targ_model.Compile(X_train_shape=batch_memory[:,-self.n_features:].shape,loss_and_optimize=False)
+        
+        batch_index = np.arange(self.batch_size, dtype=np.int32)
+        # pick the actions done in those steps.
+        eval_act_index = batch_memory[:, self.n_features].astype(int)
+        # get the reward if taking that action.
+        reward = batch_memory[:, self.n_features + 1]
+        
+        
+        q_next, q_eval4next = self.sess.run([self.targ_model.output, self.eval_model.output],
+                                            feed_dict = {self.targ_model.input:batch_memory[:,-self.n_features:],
+                                                         self.eval_model.input:batch_memory[:,-self.n_features:]})
+        
+        q_eval = self.sess.run(self.eval_model.output, 
+                               feed_dict = {self.eval_model.input : batch_memory[:, :self.n_features]})    
+    
+        q_target = q_eval.copy()
+        
+        max_a4next = np.argmax(q_eval4next, axis=1)
+        selected_q_next = q_next[batch_index, max_a4next] 
+        
+        
+        q_target[batch_index, eval_act_index] = reward + self.gamma * selected_q_next
+        
+        _, self.cost = self.sess.run([self.eval_model.train, self.eval_model.loss],
+                                     feed_dict={self.eval_model.input : batch_memory[:, :self.n_features],
+                                                self.eval_model.target : q_target})
+        
+        
+        self.cost_history.append(self.cost)
+        
+        
+        self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
+        
+class DeeepQLearningPrioReply(DeepQLearning):
+    def __init__(self,states,actions,env,episodes_size,
+                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
+                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True):
+        super().__init__(states,actions,env,episodes_size,
+                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
+                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True)
+    
+    def _Construct_DefaultModels(self):
+        
+        self.eval_model = NNM.NeuralNetworkModel()
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=20))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=15))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
+        
+        # For priority reply
+        self.eval_model.ISWeights = tf.placeholder(tf.float32, [None, 1])
+        
+        # target model and eval model share the same structure.
+        self.targ_model = cp.deepcopy(self.eval_model)
+    
+    
+    def _Store_Transition(self,state,action,reward,new_state):
+        if not hasattr(self,'memory_counter'):
+            self.memory_counter = 0
+        transition = np.hstack((state,action,reward,new_state))
+        index = self.memory_counter % self.memory_size
+        self.memory[index,:] = transition
+        self.memory_counter += 1
+     
+class DoubleDeepQLearningPrioReply(DeepQLearning):
+    def __init__()
