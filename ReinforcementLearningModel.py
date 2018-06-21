@@ -293,5 +293,13 @@ class DeeepQLearningPrioReply(DeepQLearning):
         self.memory[index,:] = transition
         self.memory_counter += 1
      
-class DoubleDeepQLearningPrioReply(DeepQLearning):
-    def __init__()
+        
+""" Be careful that this is a diamond inheritnace. """
+class DoubleDeepQLearningPrioReply(DoubleDeepQLearning,DeeepQLearningPrioReply):
+    def __init__(self,states,actions,env,episodes_size,
+                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
+                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True):
+        super().__init__(states,actions,env,episodes_size,
+                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
+                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True)
+        
