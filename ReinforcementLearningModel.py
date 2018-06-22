@@ -1,8 +1,5 @@
-import numpy as np
-import random 
-import copy
 import sys
-import pandas as pd
+
 
 if 'C:\\Users\\randysuen\\Neural-Network' or 'C:\\Users\\randysuen\\Neural-Network' not in sys.path :
     sys.path.append('C:\\Users\\randysuen\\Neural-Network')
@@ -23,8 +20,7 @@ This file consists three parts:
 
 
 class ReinforcementLearningModel():
-    def __init__(self,states,actions,env,episodes_size,features_size,decay_rate=0.1,learning_rate=0.01,epsilon=0.05):
-        self.states = states
+    def __init__(self,actions,env,episodes_size,features_size,decay_rate=0.1,learning_rate=0.01,epsilon=0.05):
         self.actions = actions
         self.env = env
         self.episodes_size = episodes_size

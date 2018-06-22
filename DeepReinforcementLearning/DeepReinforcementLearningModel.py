@@ -15,16 +15,16 @@ import NeuralNetworkLoss as NNL
 import copy as cp
 
 if 'C:\\Users\\randysuen\\Reinforcement-Learning' or 'C:\\Users\\randysuen\\Reinforcement-Learning' not in sys.path :
-    sys.path.append('C:\\Users\\randysuen\\Neural-Network')
-    sys.path.append('C:\\Users\\randysuen\\Neural-Network')
+    sys.path.append('C:\\Users\\randysuen\\Reinforcement-Learning')
+    sys.path.append('C:\\Users\\randysuen\\Reinforcement-Learning')
 
 import ReinforcementLearningModel as RLM
 
 class DeepQLearning(RLM.ReinforcementLearningModel):
-    def __init__(self,states,actions,env,episodes_size,
+    def __init__(self,actions,env,episodes_size,
                  features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
                  decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True):
-        super().__init__(states,actions,env,episodes_size,decay_rate,learning_rate,epsilon,epsilon_increment)
+        super().__init__(actions,env,episodes_size,decay_rate,learning_rate,epsilon,epsilon_increment)
         self.replace_target_size = replace_target_size
         self.memory_size = memory_size
         self.learn_size = learn_size
