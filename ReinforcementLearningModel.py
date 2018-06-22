@@ -50,6 +50,7 @@ class ReinforcementLearningModel():
     
     def Fit(self):
         raise NotImplementedError
+        
     def _Learn(self):
         raise NotImplementedError
         
@@ -133,25 +134,33 @@ class DeepQLearning(ReinforcementLearningModel):
         
     
     def Fit(self):
-        step = 0
-        state = self.env.Reset()
         
-        while True :
+        for i in range(self.env.episodes_size) :
             
-            action = self.Predict(state)
-            new_state, reward, done, _ = self.env.Step(action)
-            self._Store_Transition(state,action,reward,new_state)
+            step = 0
+            state = self.env.Reset()
+        
+            while True :
             
-            if (step > self.learn_size) and (step % 5 == 0) :
-                self._Learn()
+                action = self.Predict(state)
+                new_state, reward, done = self.env.Step(action)
+                self._Store_Transition(state,action,reward,new_state)
+            
+                if (step > self.learn_size) and (step % 5 == 0) :
+                    self._Learn()
                 
-            state = new_state
-            step += 1
+                state = new_state
+                step += 1
             
-            if step % self.replace_target_iter == 0:
-                self.sess.run(self.replace_target_op)
-                print('\ntarget_params_replaced\n')
+                if step % self.replace_target_iter == 0:
+                    self.sess.run(self.replace_target_op)
+                    print('\ntarget_params_replaced\n')
             
+                if done :
+                    print('Training over!')
+                    break
+            
+    # If an epsilon is passed, it would be greedy strategy, and vice versa.
     def Predict(self, state, epsilon=None) :
         actions = self.eval_model.Predict(X_test=state)
         action = np.argmax(actions)
@@ -294,7 +303,7 @@ class DeeepQLearningPrioReply(DeepQLearning):
         self.memory_counter += 1
      
         
-""" Be careful that this is a diamond inheritnace. """
+""" Be careful this is a diamond inheritnace. """
 class DoubleDeepQLearningPrioReply(DoubleDeepQLearning,DeeepQLearningPrioReply):
     def __init__(self,states,actions,env,episodes_size,
                  features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
