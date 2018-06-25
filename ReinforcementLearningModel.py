@@ -20,16 +20,16 @@ This file consists three parts:
 
 
 class ReinforcementLearningModel():
-    def __init__(self,actions,env,episodes_size,features_size,decay_rate=0.1,learning_rate=0.01,epsilon=0.05):
-        self.actions = actions
+    def __init__(self, env, episodes_size, features_size, gamma=0.8, decay_rate=0.1, learning_rate=0.01, epsilon=0.05):
         self.env = env
         self.episodes_size = episodes_size
         self.decay_rate = decay_rate
         self.learning_rate = learning_rate
-        self.actions_size = len(self.actions)
+        self.actions_size = len(self.env.actions_space)
         self.epsilon = epsilon
+        # It would be specified when 'Fit' attribute is called.
         self.features_size = features_size
-        
+        self.gamma = gamma
         
     def Predict(self):
         raise NotImplementedError
