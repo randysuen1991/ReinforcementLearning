@@ -15,12 +15,13 @@ This file consists three parts:
     
 """
 
+
+from abc import ABC, abstractmethod
 # This class should be a double keys one value dictionary.
 
 
-
-class ReinforcementLearningModel():
-    def __init__(self, env, episodes_size, features_size, gamma=0.8, decay_rate=0.1, learning_rate=0.01, epsilon=0.05):
+class ReinforcementLearningModel(ABC):
+    def __init__(self, env, episodes_size, gamma=0.8, decay_rate=0.1, learning_rate=0.01, epsilon=0.05):
         self.env = env
         self.episodes_size = episodes_size
         self.decay_rate = decay_rate
@@ -28,15 +29,15 @@ class ReinforcementLearningModel():
         self.actions_size = len(self.env.actions_space)
         self.epsilon = epsilon
         # It would be specified when 'Fit' attribute is called.
-        self.features_size = features_size
         self.gamma = gamma
         
+    @abstractmethod
     def Predict(self):
         raise NotImplementedError
-    
+    @abstractmethod
     def Fit(self):
         raise NotImplementedError
-        
+    @abstractmethod
     def _Learn(self):
         raise NotImplementedError
         
