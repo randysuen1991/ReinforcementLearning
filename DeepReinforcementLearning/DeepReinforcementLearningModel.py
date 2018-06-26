@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 class DeepQLearning(RLM.ReinforcementLearningModel):
     def __init__(self, env, memory_size, batch_size, episodes_size=10,
                  replace_target_size=100,learn_size=30, gamma=0.8,
-                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,default=True):
+                 decay_rate=0.1,learning_rate=0.1,epsilon=0.05,default=True):
         
         
         # Sometimes, the episodes size is determined by the  
@@ -70,8 +70,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         
         if default :
             self._Construct_DefaultModels()
-            
-            self.eval_model.Compile(X_train_shape=(self.batch_size,self.env.features_size),optimizer=tf.train.GradientDescentOptimizer(learning_rate=0.1),loss_fun=NNL.NeuralNetworkLoss.MeanSqaured)
+            self.eval_model.Compile(X_train_shape=(self.batch_size,self.env.features_size),optimizer=tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate),loss_fun=NNL.NeuralNetworkLoss.MeanSqaured)
             self.targ_model.Compile(X_train_shape=(self.batch_size,self.env.features_size),loss_and_optimize=False)
             
             self.sess.run(tf.global_variables_initializer())
@@ -215,11 +214,6 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         
         
         
-    def Summary(self):
-        try :
-            self.env.Plot()
-        except :
-            pass
 class DoubleDeepQLearning(DeepQLearning):
     def __init__(self,states,actions,env,episodes_size,
                  features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
