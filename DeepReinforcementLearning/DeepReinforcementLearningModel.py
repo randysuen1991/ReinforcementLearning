@@ -103,15 +103,15 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
     def _Construct_DefaultModels(self):
         
         self.eval_model = NNM.NeuralNetworkModel()
-#        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=15))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=10))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=100,transfer_fun=tf.nn.relu))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=50,transfer_fun=tf.nn.relu))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size,transfer_fun=None))
         
         # target model and eval model share the same structure.
         self.targ_model = NNM.NeuralNetworkModel()
-#        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=15))
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=10))
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=100,transfer_fun=tf.nn.relu))
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=50,transfer_fun=tf.nn.relu))
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size,transfer_fun=None))
         
     
     def Fit(self,plot_cost=False):
