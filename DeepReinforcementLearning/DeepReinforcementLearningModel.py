@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 
 
 class DeepQLearning(RLM.ReinforcementLearningModel):
-    def __init__(self, env, memory_size=50, batch_size=40, episodes_size=10,
+    def __init__(self, env, memory_size=50, batch_size=40, episodes_size=11,
                  replace_target_size=100,learn_size=30, gamma=0.8,
                  decay_rate=0.1,learning_rate=0.1,epsilon=0.5,default=True):
         
@@ -138,6 +138,13 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
                 
                 
                 new_state, reward, done = self.env.Step(action)
+                
+                if done :
+                    action = self.Predict(state,self.epsilon)
+                    action = self.env.DealAction(action)
+                    self.env.actions.append(action)
+                    
+                    break
                 self._Store_Transition(state.ravel(),action,reward,new_state.ravel())
             
                 if (step > self.learn_size) and (step % 5 == 0) :
@@ -150,9 +157,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
                     self.sess.run(self.replace_target)
                     print('\ntarget_params_replaced\n')
             
-                if done :
-                    
-                    break
+                
         
         if plot_cost :
             plt.plot(self.cost_history) 
@@ -215,7 +220,14 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         
         self.cost_history.append(self.cost)
     
-    
+    def BackTest(self, states):
+        actions = list()
+        for state in states :
+            action = self.Predict(state)    
+            action = self.env.DealAction(action)
+            actions.append(action)
+            
+        return actions
         
         
         
