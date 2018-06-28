@@ -97,19 +97,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         return parameters_list 
     
     
-    
-#    def _Construct_DefaultModels(self):
-#        
-#        self.eval_model = NNM.NeuralNetworkModel()
-#        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=100,transfer_fun=tf.nn.relu))
-#        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=50,transfer_fun=tf.nn.relu))
-#        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size,transfer_fun=None))
-#        
-#        # target model and eval model share the same structure.
-#        self.targ_model = NNM.NeuralNetworkModel()
-#        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=100,transfer_fun=tf.nn.relu))
-#        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=50,transfer_fun=tf.nn.relu))
-#        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size,transfer_fun=None))
+
         
     def _Construct_DefaultModels(self):
         
@@ -136,23 +124,18 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
             
             while True :
                 action = self.Predict(state,self.epsilon)
-                action = self.env.DealAction(action)
-                
                 new_state, reward, done = self.env.Step(action)
+                self._Store_Transition(state.ravel(),action,reward,new_state.ravel())
                 
                 if done :
                     action = self.Predict(new_state,self.epsilon)
-                    action = self.env.DealAction(action)
                     self.env.actions.append(action)
-                    
                     break
                 
-                
-                
-                self._Store_Transition(state.ravel(),action,reward,new_state.ravel())
-            
                 if (step > self.learn_size) and (step % 5 == 0) :
                     self._Learn()
+            
+                
                 
                 state = new_state
                 step += 1
@@ -161,11 +144,6 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
                     self.sess.run(self.replace_target)
                     print('\ntarget_params_replaced\n')
                 
-                
-#                if step == 10:
-#                    break
-                
-#            break
         
         if plot_cost :
             plt.plot(self.cost_history) 
@@ -176,13 +154,15 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
     def Predict(self, state, epsilon=None) :
         
         actions = self.eval_model.Predict(X_test=state)
-        action = np.argmax(actions)
+        action = self.env.DealAction(np.argmax(actions))
+        
         try :
             
             if np.random.uniform(0,1) < (1 - epsilon + epsilon / len(self.env.actions_space)) :
                 return action
             else :
-                actions_list = copy.copy(self.actions)
+                
+                actions_list = copy.copy(self.env.actions_space)
                 actions_list.remove(action)
                 return random.choice(actions_list)
         except :
@@ -232,7 +212,6 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         actions = list()
         for state in states :
             action = self.Predict(state)    
-            action = self.env.DealAction(action)
             actions.append(action)
             
         return actions
