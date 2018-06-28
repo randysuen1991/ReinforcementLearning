@@ -128,16 +128,22 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         
         for i in range(self.episodes_size) :
             
+            
+            
+            
             step = 0
             state = self.env.Reset(iteration=i)
             
             while True :
+                print(state)    
                 
                 action = self.Predict(state,self.epsilon)
                 action = self.env.DealAction(action)
                 
+                print(action)
                 
                 new_state, reward, done = self.env.Step(action)
+                print(done)
                 
                 if done :
                     action = self.Predict(state,self.epsilon)
@@ -145,6 +151,9 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
                     self.env.actions.append(action)
                     
                     break
+                
+                
+                
                 self._Store_Transition(state.ravel(),action,reward,new_state.ravel())
             
                 if (step > self.learn_size) and (step % 5 == 0) :
@@ -156,8 +165,12 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
                 if step % self.replace_target_size == 0:
                     self.sess.run(self.replace_target)
                     print('\ntarget_params_replaced\n')
-            
                 
+                
+#                if step == 10:
+#                    break
+                
+#            break
         
         if plot_cost :
             plt.plot(self.cost_history) 
