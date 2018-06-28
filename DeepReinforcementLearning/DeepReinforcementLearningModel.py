@@ -135,18 +135,13 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
             state = self.env.Reset(iteration=i)
             
             while True :
-                print(state)    
-                
                 action = self.Predict(state,self.epsilon)
                 action = self.env.DealAction(action)
                 
-                print(action)
-                
                 new_state, reward, done = self.env.Step(action)
-                print(done)
                 
                 if done :
-                    action = self.Predict(state,self.epsilon)
+                    action = self.Predict(new_state,self.epsilon)
                     action = self.env.DealAction(action)
                     self.env.actions.append(action)
                     
