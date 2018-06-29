@@ -124,15 +124,16 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
             
             while True :
                 action = self.Predict(state,self.epsilon)
-                new_state, reward, done = self.env.Step(action)
+                self.env.actions.append(action)
+                new_state, reward, done = self.env.Step()
                 self._Store_Transition(state.ravel(),action,reward,new_state.ravel())
-                
+                print(state.ravel(),action,reward,new_state.ravel())
                 if done :
                     action = self.Predict(new_state,self.epsilon)
                     self.env.actions.append(action)
                     break
                 
-                if (step > self.learn_size) and (step % 5 == 0) :
+                if (step > self.learn_size) and (step % 10 == 0) :
                     self._Learn()
             
                 
@@ -306,4 +307,22 @@ class DoubleDeepQLearningPrioReply(DoubleDeepQLearning,DeeepQLearningPrioReply):
         super().__init__(states,actions,env,episodes_size,
                  features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
                  decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True)
+        
+        
+        
+        
+        
+        
+        
+        
+class DuelingDeepQLearning(DeepQLearning):
+    def __init__(self,states,actions,env,episodes_size,
+                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
+                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True):
+        super().__init__(states,actions,env,episodes_size,
+                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
+                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True)
+        
+        
+        
         
