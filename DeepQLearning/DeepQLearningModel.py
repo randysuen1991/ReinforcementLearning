@@ -7,6 +7,11 @@ if 'C:\\Users\\randysuen\\pycodes\\Neural-Network' or  'C:\\Users\\ASUS\\Dropbox
     sys.path.append('C:\\Users\\randysuen\\pycodes\\Neural-Network')
     sys.path.append('C:\\Users\\ASUS\\Dropbox\\pycode\\mine\\Neural-Network')
 
+if '/home/randy/Documents/pycodes/Reinforcement-Learning/' not in sys.path:
+    sys.path.append('/home/randy/Documents/pycodes/Reinforcement-Learning')
+
+
+
 import tensorflow as tf
 import NeuralNetworkModel as NNM
 import NeuralNetworkUnit as NNU
