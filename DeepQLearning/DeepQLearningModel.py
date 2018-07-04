@@ -31,11 +31,10 @@ import matplotlib.pyplot as plt
 
 class DeepQLearning(RLM.ReinforcementLearningModel):
     def __init__(self, env, memory_size=50, batch_size=40, episodes_size=11,
-                 replace_target_size=100,learn_size=30, gamma=0.8,
-                 decay_rate=0.1,learning_rate=0.1,epsilon=0.5,default=True):
-        
-        
-        # Sometimes, the episodes size is determined by the  
+                 replace_target_size=100, learn_size=30, gamma=0.8,
+                 decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
+
+        # Sometimes, the episodes size is determined by the environment.
         if hasattr(env, 'episodes'):
             if len(env.episodes) < episodes_size :
                 warnings.warn('The available episodes size is less than the desired episodes size, so set the \
@@ -51,10 +50,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
             super().__init__(env=env, episodes_size = episodes_size, 
                      decay_rate=decay_rate, gamma=gamma,
                      learning_rate=learning_rate, epsilon=epsilon)
-        
-        
-        
-        
+
         self.replace_target_size = replace_target_size
         self.memory_size = memory_size
         self.learn_size = learn_size
@@ -90,7 +86,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
             
     def _Get_parameters(self, model):
         parameters_list = list()
-        for layer in model.layers :
+        for layer in model.layers:
             parameters_dict = layer.parameters
             for _, parameters in parameters_dict.items():
                 parameters_list.append(parameters)
@@ -100,27 +96,26 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
     def _Construct_DefaultModels(self):
         
         self.eval_model = NNM.NeuralNetworkModel()
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=30,transfer_fun=tf.nn.relu))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=15,transfer_fun=tf.nn.relu))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size,transfer_fun=None))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.tanh))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=15, transfer_fun=tf.nn.tanh))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size, transfer_fun=None))
         
         # target model and eval model share the same structure.
         self.targ_model = NNM.NeuralNetworkModel()
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=30,transfer_fun=tf.nn.relu))
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=15,transfer_fun=tf.nn.relu))
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size,transfer_fun=None))
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.tanh))
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=15, transfer_fun=tf.nn.tanh))
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size, transfer_fun=None))
     
     def Fit(self, plot_cost=False):
         for i in range(self.episodes_size):
             step = 0
             state = self.env.Reset(iteration=i)
-            
             while True:
                 action = self.Predict(state, self.epsilon)
                 self.env.actions.append(action)
                 new_state, reward, done = self.env.Step()
                 self._Store_Transition(state.ravel(), action, reward, new_state.ravel())
-                print(state.ravel(), action, reward, new_state.ravel())
+                # print(state.ravel(), action, reward, new_state.ravel())
                 if done:
                     action = self.Predict(new_state, self.epsilon)
                     self.env.actions.append(action)
@@ -134,7 +129,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
             
                 if step % self.replace_target_size == 0:
                     self.sess.run(self.replace_target)
-                    print('\ntarget_params_replaced\n')
+                    print('target_params_replaced\n')
 
         if plot_cost:
             plt.plot(self.cost_history) 
@@ -189,6 +184,14 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         _, cost = self.sess.run([self.eval_model.train, self.eval_model.loss],
                                 feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size],
                                            self.eval_model.target: q_target})
+
+        # layers = self.eval_model.layers
+        # for layer in layers:
+        #     try:
+        #         print(self.sess.run([layer.output],
+        #                             feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size]}))
+        #     except:
+        #         pass
         self.cost_history.append(cost)
     
     def BackTest(self, states):
