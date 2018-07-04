@@ -96,14 +96,18 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
     def _Construct_DefaultModels(self):
         
         self.eval_model = NNM.NeuralNetworkModel()
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.tanh))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=15, transfer_fun=tf.nn.tanh))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=100))
+        self.eval_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.tanh))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=50, transfer_fun=tf.nn.tanh))
+        self.eval_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.tanh))
         self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size, transfer_fun=None))
         
         # target model and eval model share the same structure.
         self.targ_model = NNM.NeuralNetworkModel()
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.tanh))
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=15, transfer_fun=tf.nn.tanh))
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=100))
+        self.targ_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.tanh))
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=50, transfer_fun=tf.nn.tanh))
+        self.targ_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.tanh))
         self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size, transfer_fun=None))
     
     def Fit(self, plot_cost=False):
@@ -179,18 +183,22 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         # get the reward if taking that action.
         reward = batch_memory[:, self.env.features_size + 1]
         q_target[batch_index, eval_act_index] = reward + self.gamma * np.max(q_next, axis=1)
+        try:
+            with tf.device('/gpu:0'):
+                _, cost = self.sess.run([self.eval_model.train, self.eval_model.loss],
+                                        feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size],
+                                                   self.eval_model.target: q_target})
+        except:
+                _, cost = self.sess.run([self.eval_model.train, self.eval_model.loss],
+                                        feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size],
+                                                   self.eval_model.target: q_target})
+        layers = self.eval_model.layers
+        for layer in layers:
 
-        _, cost = self.sess.run([self.eval_model.train, self.eval_model.loss],
-                                feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size],
-                                           self.eval_model.target: q_target})
+            r = self.sess.run([layer.output],
+                              feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size]})
+            print(r[0])
 
-        # layers = self.eval_model.layers
-        # for layer in layers:
-        #     try:
-        #         print(self.sess.run([layer.output],
-        #                             feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size]}))
-        #     except:
-        #         pass
         self.cost_history.append(cost)
     
     def BackTest(self, states):
