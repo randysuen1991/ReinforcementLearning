@@ -129,7 +129,6 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
             
                 if step % self.replace_target_size == 0:
                     self.sess.run(self.replace_target)
-                    print('target_params_replaced\n')
 
         if plot_cost:
             plt.plot(self.cost_history) 
