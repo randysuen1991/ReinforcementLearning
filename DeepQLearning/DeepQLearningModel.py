@@ -36,7 +36,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
 
         # Sometimes, the episodes size is determined by the environment.
         if hasattr(env, 'episodes'):
-            if len(env.episodes) < episodes_size :
+            if len(env.episodes) < episodes_size:
                 warnings.warn('The available episodes size is less than the desired episodes size, so set the \
                              episodes size to be the available one.')
                 super().__init__(env=env, episodes_size=len(env.episodes),
@@ -97,20 +97,20 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
     def _Construct_DefaultModels(self):
         self.eval_model = NNM.NeuralNetworkModel()
         # self.eval_model.Build(NNU.NeuronLayer(hidden_dim=100, transfer_fun=tf.nn.tanh))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=100))
-        self.eval_model.Build(NNU.BatchNormalization())
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=30))
+        self.eval_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.relu))
         # self.eval_model.Build(NNU.NeuronLayer(hidden_dim=50, transfer_fun=tf.nn.tanh))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=50, transfer_fun=tf.nn.tanh))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=20, transfer_fun=tf.nn.tanh))
         # self.eval_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.tanh))
         self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
         
         # target model and eval model share the same structure.
         self.targ_model = NNM.NeuralNetworkModel()
         # self.targ_model.Build(NNU.NeuronLayer(hidden_dim=100, transfer_fun=tf.nn.tanh))
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=100))
-        self.targ_model.Build(NNU.BatchNormalization())
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=30))
+        self.targ_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.relu))
         # self.targ_model.Build(NNU.NeuronLayer(hidden_dim=50, transfer_fun=tf.nn.tanh))
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=50, transfer_fun=tf.nn.tanh))
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=20, transfer_fun=tf.nn.tanh))
         # self.targ_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.tanh))
         self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
     
@@ -128,7 +128,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
                     action = self.Predict(new_state, self.epsilon)
                     self.env.actions.append(action)
                     break
-                if (step > self.learn_size) and (step % 10 == 0):
+                if (step > self.learn_size) and (step % 5 == 0):
                     self._Learn()
                 state = new_state
                 step += 1
@@ -136,26 +136,15 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
                     self.sess.run(self.replace_target)
         if plot_cost:
             plt.plot(self.cost_history)
-        self.eval_model.on_train = False
-        self.targ_model.on_train = False
 
         print('Training over!')
                 
     # If an epsilon is passed, it would be greedy strategy, and vice versa.
     def Predict(self, state, epsilon=None):
-        layers = self.eval_model.layers
-        for layer in layers:
-            print(layer)
-
-            print('output:')
-            r = self.sess.run([layer.output],
-                              feed_dict={self.eval_model.input: state})
-            print(r[0])
-
-
-        actions = self.eval_model.Predict(X_test=state)
+        actions = self.sess.run(fetches=self.eval_model.output,
+                                feed_dict={self.eval_model.input: state,
+                                           self.eval_model.on_train: False})
         action = self.env.DealAction(np.argmax(actions))
-        
         try:
             if np.random.uniform(0, 1) < (1 - epsilon + epsilon / len(self.env.actions_space)):
                 return action
@@ -163,7 +152,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
                 actions_list = copy.copy(self.env.actions_space)
                 actions_list.remove(action)
                 return random.choice(actions_list)
-        except :
+        except TypeError:
             return action
     
     def _Store_Transition(self, state, action, reward, new_state):
@@ -185,7 +174,9 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
 
         q_next, q_eval = self.sess.run([self.targ_model.output, self.eval_model.output],
                                        feed_dict={self.targ_model.input: batch_memory[:, -self.env.features_size:],
-                                                  self.eval_model.input: batch_memory[:, :self.env.features_size]})
+                                                  self.eval_model.input: batch_memory[:, :self.env.features_size],
+                                                  self.targ_model.on_train: False,
+                                                  self.eval_model.on_train: False})
         
         q_target = q_eval.copy()
         batch_index = np.arange(self.batch_size, dtype=np.int32)
@@ -194,23 +185,11 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         # get the reward if taking that action.
         reward = batch_memory[:, self.env.features_size + 1]
         q_target[batch_index, eval_act_index] = reward + self.gamma * np.max(q_next, axis=1)
-        try:
-            with tf.device('/gpu:0'):
-                _, cost = self.sess.run([self.eval_model.train, self.eval_model.loss],
-                                        feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size],
-                                                   self.eval_model.target: q_target})
-        except:
-                _, cost = self.sess.run([self.eval_model.train, self.eval_model.loss],
-                                        feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size],
-                                                   self.eval_model.target: q_target})
-        # layers = self.eval_model.layers
-        # for layer in layers:
-        #     print(layer)
-        #     print(layer.output.shape)
-        #     r = self.sess.run([layer.output],
-        #                       feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size]})
-        #     print(r[0])
 
+        _, cost = self.sess.run([self.eval_model.train, self.eval_model.loss],
+                                feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size],
+                                           self.eval_model.target: q_target,
+                                           self.eval_model.on_train: True})
         self.cost_history.append(cost)
     
     def BackTest(self, states):
@@ -219,6 +198,18 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
             action = self.Predict(state)
             actions.append(action)
         return actions
+
+    def Print_Output_Detail(self, state):
+        layers = self.eval_model.layers
+        for layer in layers:
+            print(layer)
+            print('input:')
+            layer_input, layer_output = self.sess.run([layer.input, layer.output],
+                                                      feed_dict={self.eval_model.input: state,
+                                                                 self.eval_model.on_train: False})
+            print(layer_input)
+            print('output:')
+            print(layer_output)
 
 class DoubleDeepQLearning(DeepQLearning):
     def __init__(self, env, memory_size=50, batch_size=40, episodes_size=10,
@@ -313,11 +304,14 @@ class DoubleDeepQLearningPrioReply(DoubleDeepQLearning,DeeepQLearningPrioReply):
 class DuelingDeepQLearning(DeepQLearning):
     def __init__(self,states,actions,env,episodes_size,
                  features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
-                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True):
-        super().__init__(states,actions,env,episodes_size,
-                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
-                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True)
-        
-        
-        
-        
+                 decay_rate=0.1,learning_rate=0.01, epsilon=0.05,epsilon_increment=None,default=True):
+        super().__init__(states, actions, env, episodes_size,
+                 features_size, memory_size, batch_size, replace_target_size=300,learn_size=150,
+                 decay_rate=0.1, learning_rate=0.01, epsilon=0.05, epsilon_increment=None, default=True)
+
+    # I should add the method which could split the model.
+    def _Construct_DefaultModels(self):
+        self.eval_model = NNM.NeuralNetworkModel()
+
+
+        self.targ_model = NNM.NeuralNetworkModel()
