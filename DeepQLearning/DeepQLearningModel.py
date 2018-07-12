@@ -98,20 +98,20 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         self.eval_model = NNM.NeuralNetworkModel()
         # self.eval_model.Build(NNU.NeuronLayer(hidden_dim=50, transfer_fun=tf.nn.sigmoid))
         # self.eval_model.Build(NNU.BatchNormalization())
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.sigmoid))
-        # self.eval_model.Build(NNU.BatchNormalization())
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid))
-        # self.eval_model.Build(NNU.BatchNormalization())
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=30))
+        self.eval_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.sigmoid))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=10))
+        self.eval_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.sigmoid))
         self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
 
         # target model and eval model share the same structure.
         self.targ_model = NNM.NeuralNetworkModel()
         # self.targ_model.Build(NNU.NeuronLayer(hidden_dim=50, transfer_fun=tf.nn.sigmoid))
         # self.targ_model.Build(NNU.BatchNormalization())
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.sigmoid))
-        # self.targ_model.Build(NNU.BatchNormalization())
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid))
-        # self.targ_model.Build(NNU.BatchNormalization())
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=30))
+        self.targ_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.sigmoid))
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=10))
+        self.targ_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.sigmoid))
         self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
     
     def Fit(self, plot_cost=False):
