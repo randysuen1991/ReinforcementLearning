@@ -98,20 +98,20 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         self.eval_model = NNM.NeuralNetworkModel()
         # self.eval_model.Build(NNU.NeuronLayer(hidden_dim=50, transfer_fun=tf.nn.sigmoid))
         # self.eval_model.Build(NNU.BatchNormalization())
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=30))
-        self.eval_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.sigmoid))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=10))
-        self.eval_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.sigmoid))
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.sigmoid))
+        self.eval_model.Build(NNU.BatchNormalization())
+        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid))
+        self.eval_model.Build(NNU.BatchNormalization())
         self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
 
         # target model and eval model share the same structure.
         self.targ_model = NNM.NeuralNetworkModel()
         # self.targ_model.Build(NNU.NeuronLayer(hidden_dim=50, transfer_fun=tf.nn.sigmoid))
         # self.targ_model.Build(NNU.BatchNormalization())
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=30))
-        self.targ_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.sigmoid))
-        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=10))
-        self.targ_model.Build(NNU.BatchNormalization(transfer_fun=tf.nn.sigmoid))
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.sigmoid))
+        self.targ_model.Build(NNU.BatchNormalization())
+        self.targ_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid))
+        self.targ_model.Build(NNU.BatchNormalization())
         self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
     
     def Fit(self, plot_cost=False):
@@ -214,17 +214,17 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
 class DoubleDeepQLearning(DeepQLearning):
     def __init__(self, env, memory_size=50, batch_size=40, episodes_size=10,
                  replace_target_size=100,learn_size=30, gamma=0.8,
-                 decay_rate=0.1,learning_rate=0.1,epsilon=0.5,default=True):
+                 decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
         
         super().__init__(env=env, memory_size=memory_size, batch_size = batch_size, episodes_size=episodes_size,
-                 replace_target_size=replace_target_size,learn_size=learn_size, gamma=gamma,
-                 decay_rate=decay_rate,learning_rate=learning_rate,epsilon=epsilon,default=default)
+                         replace_target_size=replace_target_size, learn_size=learn_size, gamma=gamma,
+                         decay_rate=decay_rate, learning_rate=learning_rate, epsilon=epsilon, default=default)
     
     def _Learn(self):
-        if self.memory_counter > self.memory_size :
-            sample_index = np.random.choice(self.memory_size,size=self.batch_size)
-        else :
-            sample_index = np.random.choice(self.memory_counter,size=self.batch_size)
+        if self.memory_counter > self.memory_size:
+            sample_index = np.random.choice(self.memory_size, size=self.batch_size)
+        else:
+            sample_index = np.random.choice(self.memory_counter, size=self.batch_size)
             
         batch_memory = self.memory[sample_index, :]
 
@@ -239,7 +239,7 @@ class DoubleDeepQLearning(DeepQLearning):
                                                        self.eval_model.input:batch_memory[:, -self.env.features_size:]})
         
         q_eval = self.sess.run(self.eval_model.output, 
-                               feed_dict={self.eval_model.input : batch_memory[:, :self.env.features_size]})
+                               feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size]})
     
         q_target = q_eval.copy()
         max_a4next = np.argmax(q_eval4next, axis=1)
@@ -250,23 +250,14 @@ class DoubleDeepQLearning(DeepQLearning):
                                      feed_dict={self.eval_model.input: batch_memory[:, :self.env.features_size],
                                                 self.eval_model.target: q_target})
 
-        # layers = self.eval_model.layers
-        # for layer in layers:
-            # print()
-
-
         self.cost_history.append(self.cost)
         
-        
-        
-        
+
 class DeeepQLearningPrioReply(DeepQLearning):
-    def __init__(self,states,actions,env,episodes_size,
-                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
-                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True):
-        super().__init__(states,actions,env,episodes_size,
-                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
-                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True)
+    def __init__(self, env, memory_size=50, batch_size=40, episodes_size=11, replace_target_size=100,
+                 learn_size=30, gamma=0.8, decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
+        super().__init__(env, memory_size, batch_size, episodes_size, replace_target_size, learn_size, gamma,
+                         decay_rate, learning_rate, epsilon, default)
     
     def _Construct_DefaultModels(self):
         
@@ -280,38 +271,52 @@ class DeeepQLearningPrioReply(DeepQLearning):
         
         # target model and eval model share the same structure.
         self.targ_model = cp.deepcopy(self.eval_model)
-    
-    
-    def _Store_Transition(self,state,action,reward,new_state):
-        if not hasattr(self,'memory_counter'):
+
+    def _Store_Transition(self, state, action, reward, new_state):
+        if not hasattr(self, 'memory_counter'):
             self.memory_counter = 0
-        transition = np.hstack((state,action,reward,new_state))
+        transition = np.hstack((state, action, reward, new_state))
         index = self.memory_counter % self.memory_size
-        self.memory[index,:] = transition
+        self.memory[index, :] = transition
         self.memory_counter += 1
      
-        
-""" Be careful this is a diamond inheritnace. """
-class DoubleDeepQLearningPrioReply(DoubleDeepQLearning,DeeepQLearningPrioReply):
-    def __init__(self,states,actions,env,episodes_size,
-                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
-                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True):
-        super().__init__(states,actions,env,episodes_size,
-                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
-                 decay_rate=0.1,learning_rate=0.01,epsilon=0.05,epsilon_increment=None,default=True)
+
+class DoubleDeepQLearningPrioReply(DoubleDeepQLearning, DeeepQLearningPrioReply):
+    def __init__(self, env, memory_size=50, batch_size=40, episodes_size=11, replace_target_size=100,
+                 learn_size=30, gamma=0.8, decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
+        super().__init__(env, memory_size, batch_size, episodes_size, replace_target_size, learn_size, gamma,
+                         decay_rate, learning_rate, epsilon, default)
 
         
 class DuelingDeepQLearning(DeepQLearning):
-    def __init__(self,states,actions,env,episodes_size,
-                 features_size, memory_size, batch_size,replace_target_size=300,learn_size=150,
-                 decay_rate=0.1,learning_rate=0.01, epsilon=0.05,epsilon_increment=None,default=True):
-        super().__init__(states, actions, env, episodes_size,
-                 features_size, memory_size, batch_size, replace_target_size=300,learn_size=150,
-                 decay_rate=0.1, learning_rate=0.01, epsilon=0.05, epsilon_increment=None, default=True)
+    def __init__(self, env, memory_size=50, batch_size=40, episodes_size=11, replace_target_size=100,
+                 learn_size=30, gamma=0.8, decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
 
-    # I should add the method which could split the model.
+        self.pre_eval_model = None
+        self.eval_value = None
+        self.eval_adv = None
+        self.pre_targ_model = None
+        self.targ_value = None
+        self.targ_adv = None
+
+        super().__init__(env, memory_size, batch_size, episodes_size, replace_target_size, learn_size, gamma,
+                         decay_rate, learning_rate, epsilon, default)
+
     def _Construct_DefaultModels(self):
-        self.eval_model = NNM.NeuralNetworkModel()
+        self.pre_eval_model = NNM.NeuralNetworkModel()
+        self.pre_eval_model.Build(NNU.NeuronLayer(hidden_dim=20))
+        self.eval_value, self.eval_adv = self.pre_eval_model.Split(2)
+        self.eval_value.Build(NNU.NeuronLayer(hidden_dim=1))
+        self.eval_adv.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
+        NNM.NeuralNetworkModel.Reduce_Mean(self.eval_adv)
+        self.eval_model = NNM.NeuralNetworkModel.Merge(op='add', model1=self.eval_value, model2=self.eval_adv)
+
+        self.pre_targ_model = NNM.NeuralNetworkModel()
+        self.pre_targ_model.Build(NNU.NeuronLayer(hidden_dim=20))
+        self.targ_value, self.targ_adv = self.pre_targ_model.Split(2)
+        self.targ_value.Build(NNU.NeuronLayer(hidden_dim=1))
+        self.targ_adv.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
+        NNM.NeuralNetworkModel.Reduce_Mean(self.targ_adv)
+        self.targ_model = NNM.NeuralNetworkModel.Merge(op='add', model1=self.targ_value, model2=self.targ_adv)
 
 
-        self.targ_model = NNM.NeuralNetworkModel()
