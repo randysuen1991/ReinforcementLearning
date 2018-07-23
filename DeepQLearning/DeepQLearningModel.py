@@ -45,6 +45,8 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         self.cost_history = list()
         self.epsilon = epsilon
         self.gamma = gamma
+        self.eval_model = None
+        self.targ_model = None
         assert self.memory_size > self.batch_size
 
         if default:
@@ -180,17 +182,9 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
             actions.append(action)
         return actions
 
-    def Print_Output_Detail(self, state):
-        layers = self.eval_model.layers
-        for layer in layers:
-            print(layer)
-            print('input:')
-            layer_input, layer_output = self.sess.run([layer.input, layer.output],
-                                                      feed_dict={self.eval_model.input: state,
-                                                                 self.eval_model.on_train: False})
-            print(layer_input)
-            print('output:')
-            print(layer_output)
+    def Print_Output_Detail(self, states):
+        for state in states:
+            self.eval_model.Print_Output_Detail(state, sess=self.sess)
 
 
 class DoubleDeepQLearning(DeepQLearning):
@@ -274,10 +268,6 @@ class DoubleDeepQLearningPrioReply(DoubleDeepQLearning, DeeepQLearningPrioReply)
 class DuelingDeepQLearning(DeepQLearning):
     def __init__(self, env, memory_size=50, batch_size=40, replace_target_size=100,
                  learn_size=30, gamma=0.8, decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
-
-        self.eval_model = None
-        self.targ_model = None
-
         super().__init__(env, memory_size, batch_size, replace_target_size, learn_size, gamma,
                          decay_rate, learning_rate, epsilon, default)
 
@@ -292,7 +282,7 @@ class DuelingDeepQLearning(DeepQLearning):
             self.eval_model.Build(NNU.NeuronLayer(hidden_dim=1), name='value')
             self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size), name='adv')
             self.eval_model.Build(NNU.Reduce_Mean(), name='adv')
-            self.eval_model.Merge(op='add', names=['adv', 'value'], output_name='last')
+            self.eval_model.Merge(op='add', names=['adv', 'value'])
 
         self.eval_model.batch_size = self.batch_size
         self.eval_model.mini_batch = self.eval_model.batch_size
@@ -314,6 +304,3 @@ class DuelingDeepQLearning(DeepQLearning):
 
         self.targ_model.sess.close()
 
-
-if __name__ == '__main__':
-    pass
