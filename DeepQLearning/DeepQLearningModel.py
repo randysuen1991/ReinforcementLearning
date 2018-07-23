@@ -79,11 +79,11 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         with tf.variable_scope('eval'):
             self.eval_model = NNM.NeuralNetworkModel(graph=self.graph)
 
-            self.eval_model.Build(NNU.NeuronLayer(hidden_dim=20, transfer_fun=tf.nn.sigmoid),
+            self.eval_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid),
                                   input_dim=self.env.features_size)
             self.eval_model.Build(NNU.BatchNormalization())
-            self.eval_model.Build(NNU.NeuronLayer(hidden_dim=5, transfer_fun=tf.nn.sigmoid))
-            self.eval_model.Build(NNU.BatchNormalization())
+            # self.eval_model.Build(NNU.NeuronLayer(hidden_dim=5, transfer_fun=tf.nn.sigmoid))
+            # self.eval_model.Build(NNU.BatchNormalization())
             self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
 
         self.eval_model.batch_size = self.batch_size
@@ -94,11 +94,11 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         # target model and eval model share the same structure.
         with tf.variable_scope('target'):
             self.targ_model = NNM.NeuralNetworkModel(graph=self.graph)
-            self.targ_model.Build(NNU.NeuronLayer(hidden_dim=20, transfer_fun=tf.nn.sigmoid),
+            self.targ_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid),
                                   input_dim=self.env.features_size)
             self.targ_model.Build(NNU.BatchNormalization())
-            self.targ_model.Build(NNU.NeuronLayer(hidden_dim=5, transfer_fun=tf.nn.sigmoid))
-            self.targ_model.Build(NNU.BatchNormalization())
+            # self.targ_model.Build(NNU.NeuronLayer(hidden_dim=5, transfer_fun=tf.nn.sigmoid))
+            # self.targ_model.Build(NNU.BatchNormalization())
             self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
         self.targ_model.sess.close()
     
@@ -274,10 +274,11 @@ class DuelingDeepQLearning(DeepQLearning):
     def _Construct_DefaultModels(self):
         with tf.variable_scope('eval'):
             self.eval_model = NNM.NeuralNetworkModel(graph=self.graph)
-            self.eval_model.Build(NNU.NeuronLayer(hidden_dim=20, transfer_fun=tf.nn.sigmoid),
+            self.eval_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid),
                                   input_dim=self.env.features_size)
+            # self.eval_model.Build(NNU.BatchNormalization())
+            # self.eval_model.Build(NNU.NeuronLayer(hidden_dim=5, transfer_fun=tf.nn.sigmoid))
             self.eval_model.Build(NNU.BatchNormalization())
-            self.eval_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid))
             self.eval_model.Split(names=['adv', 'value'])
             self.eval_model.Build(NNU.NeuronLayer(hidden_dim=1), name='value')
             self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size), name='adv')
@@ -292,10 +293,11 @@ class DuelingDeepQLearning(DeepQLearning):
 
         with tf.variable_scope('targ'):
             self.targ_model = NNM.NeuralNetworkModel(graph=self.graph)
-            self.targ_model.Build(NNU.NeuronLayer(hidden_dim=20, transfer_fun=tf.nn.sigmoid),
+            self.targ_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid),
                                   input_dim=self.env.features_size)
+            # self.targ_model.Build(NNU.BatchNormalization())
+            # self.targ_model.Build(NNU.NeuronLayer(hidden_dim=5, transfer_fun=tf.nn.sigmoid))
             self.targ_model.Build(NNU.BatchNormalization())
-            self.targ_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid))
             self.targ_model.Split(names=['adv', 'value'])
             self.targ_model.Build(NNU.NeuronLayer(hidden_dim=1), name='value')
             self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size), name='adv')
