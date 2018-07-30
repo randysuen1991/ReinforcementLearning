@@ -10,7 +10,7 @@ if 'C:\\Users\\randysuen\\Neural-Network' or 'C:\\Users\\randysuen\\Neural-Netwo
 """
 This file consists three parts:
     The first is the action-value function, Q, and state-value function, V, for policy pi.
-    The second one is the learning algorithm, include SARSA, Q-learning, .... .
+    The second one is the learning algorithm, including SARSA, Q-learning, .... .
     The last is the model itself which uses the learning algorith to make decision.
     
 """
