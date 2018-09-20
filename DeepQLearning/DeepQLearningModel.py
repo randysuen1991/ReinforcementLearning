@@ -1,31 +1,11 @@
 import numpy as np
 import random 
-import copy
-import sys
-
-if 'C:\\Users\\randysuen\\pycodes\\Neural-Network' or 'C:\\Users\\ASUS\\Dropbox\\pycode\\mine\\Neural-Network' not in sys.path :
-    sys.path.append('C:\\Users\\randysuen\\pycodes\\Neural-Network')
-    sys.path.append('C:\\Users\\ASUS\\Dropbox\\pycode\\mine\\Neural-Network')
-
-if '/home/randy/Documents/pycodes/Reinforcement-Learning/' not in sys.path:
-    sys.path.append('/home/randy/Documents/pycodes/Reinforcement-Learning')
-
-
-
-import tensorflow as tf
-import NeuralNetworkModel as NNM
-import NeuralNetworkUnit as NNU
-import NeuralNetworkLoss as NNL
-
 import copy as cp
-import warnings
-
-if 'C:\\Users\\randysuen\\pycodes\\Reinforcement-Learning' or 'C:\\Users\\ASUS\\Dropbox\\pycode\\mine\\Reinforcement-Learning' not in sys.path:
-    sys.path.append('C:\\Users\\randysuen\\pycodes\\Reinforcement-Learning')
-    sys.path.append('C:\\Users\\ASUS\\Dropbox\\pycode\\mine\\Reinforcement-Learning')
-
-import ReinforcementLearningModel as RLM
-
+import tensorflow as tf
+from NeuralNetwork import NeuralNetworkModel as NNM
+from NeuralNetwork import NeuralNetworkUnit as NNU
+from NeuralNetwork import NeuralNetworkLoss as NNL
+from ReinforcementLearning import ReinforcementLearningModel as RLM
 import matplotlib.pyplot as plt
 
 
