@@ -30,13 +30,13 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         assert self.memory_size > self.batch_size
 
         if default:
-            self._Construct_DefaultModels()
+            self._construct_default_models()
             with self.graph.as_default():
                 self.sess.run(tf.global_variables_initializer())
             # If NOT using the default model, the following codes should be handled still.
             # Define replace_target_op here.
-            eval_params = self._Get_parameters(self.eval_model.NNTree.root)
-            targ_params = self._Get_parameters(self.targ_model.NNTree.root)
+            eval_params = self._get_parameters(self.eval_model.NNTree.root)
+            targ_params = self._get_parameters(self.targ_model.NNTree.root)
             assert len(eval_params) == len(targ_params)
             with self.graph.as_default():
                 self.replace_target = [tf.assign(t, e) for t, e in zip(targ_params, eval_params)]
@@ -45,61 +45,61 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         else:
             pass
             
-    def _Get_parameters(self, layer):
+    def _get_parameters(self, layer):
         parameters_list = list()
         parameters_dict = layer.parameters
         for _, parameters in parameters_dict.items():
             parameters_list.append(parameters)
         for _, son in layer.sons.items():
-            son_parameters_list = self._Get_parameters(son)
+            son_parameters_list = self._get_parameters(son)
             parameters_list += son_parameters_list
         return parameters_list 
 
-    def _Construct_DefaultModels(self):
+    def _construct_default_models(self):
         with self.graph.as_default():
             with tf.variable_scope('eval'):
                 self.eval_model = NNM.NeuralNetworkModel(graph=self.graph)
 
-                self.eval_model.Build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.sigmoid),
+                self.eval_model.build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.sigmoid),
                                       input_dim=self.env.features_size)
-                self.eval_model.Build(NNU.BatchNormalization())
-                self.eval_model.Build(NNU.NeuronLayer(hidden_dim=20, transfer_fun=tf.nn.sigmoid))
-                self.eval_model.Build(NNU.BatchNormalization())
-                self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
+                self.eval_model.build(NNU.BatchNormalization())
+                self.eval_model.build(NNU.NeuronLayer(hidden_dim=20, transfer_fun=tf.nn.sigmoid))
+                self.eval_model.build(NNU.BatchNormalization())
+                self.eval_model.build(NNU.NeuronLayer(hidden_dim=self.actions_size))
                 # self.eval_model.Build(NNU.BatchNormalization())
 
             self.eval_model.batch_size = self.batch_size
             self.eval_model.mini_batch = self.eval_model.batch_size
-            self.eval_model.Compile(optimizer=tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate),
-                                    loss_fun=NNL.NeuralNetworkLoss.MeanSquared)
+            self.eval_model.compile(optimizer=tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate),
+                                    loss_fun=NNL.NeuralNetworkLoss.meansquared)
             self.eval_model.sess.close()
             # target model and eval model share the same structure.
             with tf.variable_scope('target'):
                 self.targ_model = NNM.NeuralNetworkModel(graph=self.graph)
-                self.targ_model.Build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.sigmoid),
+                self.targ_model.build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=tf.nn.sigmoid),
                                       input_dim=self.env.features_size)
-                self.targ_model.Build(NNU.BatchNormalization())
-                self.targ_model.Build(NNU.NeuronLayer(hidden_dim=20, transfer_fun=tf.nn.sigmoid))
-                self.targ_model.Build(NNU.BatchNormalization())
-                self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size, transfer_fun=tf.nn.sigmoid))
-                # self.targ_model.Build(NNU.BatchNormalization())
+                self.targ_model.build(NNU.BatchNormalization())
+                self.targ_model.build(NNU.NeuronLayer(hidden_dim=20, transfer_fun=tf.nn.sigmoid))
+                self.targ_model.build(NNU.BatchNormalization())
+                self.targ_model.build(NNU.NeuronLayer(hidden_dim=self.actions_size, transfer_fun=tf.nn.sigmoid))
+                # self.targ_model.build(NNU.BatchNormalization())
             self.targ_model.sess.close()
     
-    def Fit(self, plot_cost=False):
+    def fit(self, plot_cost=False):
         for i in range(self.env.episodes_size):
             step = 0
             state = self.env.Reset(iteration=i)
             while True:
-                action = self.Predict(state, self.epsilon)
+                action = self.predict(state, self.epsilon)
                 self.env.actions.append(action)
                 new_state, reward, done = self.env.Step()
-                self._Store_Transition(state.ravel(), action, reward, new_state.ravel())
+                self._store_transition(state.ravel(), action, reward, new_state.ravel())
                 if done:
-                    action = self.Predict(new_state, self.epsilon)
+                    action = self.predict(new_state, self.epsilon)
                     self.env.actions.append(action)
                     break
                 if (step > self.learn_size) and (step % 5 == 0):
-                    self._Learn()
+                    self._learn()
                 state = new_state
                 step += 1
                 if step % self.replace_target_size == 0:
@@ -110,7 +110,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         print('Training over!')
                 
     # If an epsilon is passed, it would be greedy strategy, and vice versa.
-    def Predict(self, state, epsilon=None):
+    def predict(self, state, epsilon=None):
         actions = self.sess.run(fetches=self.eval_model.output,
                                 feed_dict={self.eval_model.input: state,
                                            self.eval_model.on_train: False})
@@ -125,7 +125,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         except TypeError:
             return action
     
-    def _Store_Transition(self, state, action, reward, new_state):
+    def _store_transition(self, state, action, reward, new_state):
         if not hasattr(self, 'memory_counter'):
             self.memory_counter = 0
         transition = np.hstack((state, action, reward, new_state))
@@ -133,7 +133,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         self.memory[index, :] = transition
         self.memory_counter += 1
 
-    def _Learn(self):
+    def _learn(self):
         if self.memory_counter > self.memory_size:
             sample_index = np.random.choice(self.memory_size, size=self.batch_size)
         else:
@@ -161,14 +161,14 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
                                            self.eval_model.on_train: True})
         self.cost_history.append(cost)
     
-    def BackTest(self, states):
+    def backtest(self, states):
         actions = list()
         for state in states:
             action = self.Predict(state)
             actions.append(action)
         return actions
 
-    def Print_Output_Detail(self, states):
+    def print_output_detail(self, states):
         for state in states:
             self.eval_model.Print_Output_Detail(state, sess=self.sess)
 
@@ -182,7 +182,7 @@ class DoubleDeepQLearning(DeepQLearning):
                          replace_target_size=replace_target_size, learn_size=learn_size, gamma=gamma,
                          decay_rate=decay_rate, learning_rate=learning_rate, epsilon=epsilon, default=default)
     
-    def _Learn(self):
+    def _learn(self):
         if self.memory_counter > self.memory_size:
             sample_index = np.random.choice(self.memory_size, size=self.batch_size)
         else:
@@ -219,19 +219,19 @@ class DoubleDeepQLearning(DeepQLearning):
         self.cost_history.append(self.cost)
 
 
-class DeeepQLearningPrioReply(DeepQLearning):
+class DeepQLearningPrioReply(DeepQLearning):
     def __init__(self, env, memory_size=50, batch_size=40, replace_target_size=100,
                  learn_size=30, gamma=0.8, decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
 
         super().__init__(env, memory_size, batch_size, replace_target_size, learn_size, gamma,
                          decay_rate, learning_rate, epsilon, default)
     
-    def _Construct_DefaultModels(self):
+    def _construct_default_models(self):
         
         self.eval_model = NNM.NeuralNetworkModel()
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=20))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=15))
-        self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size))
+        self.eval_model.build(NNU.NeuronLayer(hidden_dim=20))
+        self.eval_model.build(NNU.NeuronLayer(hidden_dim=15))
+        self.eval_model.build(NNU.NeuronLayer(hidden_dim=self.actions_size))
         
         # For priority reply
         self.eval_model.ISWeights = tf.placeholder(tf.float32, [None, 1])
@@ -239,7 +239,7 @@ class DeeepQLearningPrioReply(DeepQLearning):
         # target model and eval model share the same structure.
         self.targ_model = cp.deepcopy(self.eval_model)
 
-    def _Store_Transition(self, state, action, reward, new_state):
+    def _store_transition(self, state, action, reward, new_state):
         if not hasattr(self, 'memory_counter'):
             self.memory_counter = 0
         transition = np.hstack((state, action, reward, new_state))
@@ -248,7 +248,7 @@ class DeeepQLearningPrioReply(DeepQLearning):
         self.memory_counter += 1
      
 
-class DoubleDeepQLearningPrioReply(DoubleDeepQLearning, DeeepQLearningPrioReply):
+class DoubleDeepQLearningPrioReply(DoubleDeepQLearning, DeepQLearningPrioReply):
     def __init__(self, env, memory_size=50, batch_size=40, replace_target_size=100,
                  learn_size=30, gamma=0.8, decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
         super().__init__(env, memory_size, batch_size, replace_target_size, learn_size, gamma,
@@ -261,39 +261,39 @@ class DuelingDeepQLearning(DeepQLearning):
         super().__init__(env, memory_size, batch_size, replace_target_size, learn_size, gamma,
                          decay_rate, learning_rate, epsilon, default)
 
-    def _Construct_DefaultModels(self):
+    def _construct_default_models(self):
         with self.graph.as_default():
             with tf.variable_scope('eval'):
                 self.eval_model = NNM.NeuralNetworkModel(graph=self.graph)
-                self.eval_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid),
+                self.eval_model.build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid),
                                       input_dim=self.env.features_size)
-                self.eval_model.Build(NNU.BatchNormalization())
-                # self.eval_model.Build(NNU.NeuronLayer(hidden_dim=5, transfer_fun=tf.nn.sigmoid))
-                # self.eval_model.Build(NNU.BatchNormalization())
-                self.eval_model.Split(names=['adv', 'value'])
-                self.eval_model.Build(NNU.NeuronLayer(hidden_dim=1), name='value')
-                self.eval_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size), name='adv')
-                self.eval_model.Build(NNU.Reduce_Mean(), name='adv')
-                self.eval_model.Merge(op='add', names=['adv', 'value'])
+                self.eval_model.build(NNU.BatchNormalization())
+                # self.eval_model.build(NNU.NeuronLayer(hidden_dim=5, transfer_fun=tf.nn.sigmoid))
+                # self.eval_model.build(NNU.BatchNormalization())
+                self.eval_model.split(names=['adv', 'value'])
+                self.eval_model.build(NNU.NeuronLayer(hidden_dim=1), name='value')
+                self.eval_model.build(NNU.NeuronLayer(hidden_dim=self.actions_size), name='adv')
+                self.eval_model.build(NNU.ReduceMean(), name='adv')
+                self.eval_model.merge(op='add', names=['adv', 'value'])
 
             self.eval_model.batch_size = self.batch_size
             self.eval_model.mini_batch = self.eval_model.batch_size
-            self.eval_model.Compile(optimizer=tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate),
-                                    loss_fun=NNL.NeuralNetworkLoss.MeanSquared)
+            self.eval_model.compile(optimizer=tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate),
+                                    loss_fun=NNL.NeuralNetworkLoss.meansquared)
             self.eval_model.sess.close()
 
             with tf.variable_scope('target'):
                 self.targ_model = NNM.NeuralNetworkModel(graph=self.graph)
-                self.targ_model.Build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid),
+                self.targ_model.build(NNU.NeuronLayer(hidden_dim=10, transfer_fun=tf.nn.sigmoid),
                                       input_dim=self.env.features_size)
-                self.targ_model.Build(NNU.BatchNormalization())
-                # self.targ_model.Build(NNU.NeuronLayer(hidden_dim=5, transfer_fun=tf.nn.sigmoid))
-                # self.targ_model.Build(NNU.BatchNormalization())
-                self.targ_model.Split(names=['adv', 'value'])
-                self.targ_model.Build(NNU.NeuronLayer(hidden_dim=1), name='value')
-                self.targ_model.Build(NNU.NeuronLayer(hidden_dim=self.actions_size), name='adv')
-                self.targ_model.Build(NNU.Reduce_Mean(), name='adv')
-                self.targ_model.Merge(op='add', names=['adv', 'value'], output_name='last')
+                self.targ_model.build(NNU.BatchNormalization())
+                # self.targ_model.build(NNU.NeuronLayer(hidden_dim=5, transfer_fun=tf.nn.sigmoid))
+                # self.targ_model.build(NNU.BatchNormalization())
+                self.targ_model.split(names=['adv', 'value'])
+                self.targ_model.build(NNU.NeuronLayer(hidden_dim=1), name='value')
+                self.targ_model.build(NNU.NeuronLayer(hidden_dim=self.actions_size), name='adv')
+                self.targ_model.build(NNU.ReduceMean(), name='adv')
+                self.targ_model.merge(op='add', names=['adv', 'value'], output_name='last')
 
             self.targ_model.sess.close()
 

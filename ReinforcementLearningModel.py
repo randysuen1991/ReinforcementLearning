@@ -1,12 +1,3 @@
-import sys
-
-
-if 'C:\\Users\\randysuen\\Neural-Network' or 'C:\\Users\\randysuen\\Neural-Network' not in sys.path :
-    sys.path.append('C:\\Users\\randysuen\\Neural-Network')
-    sys.path.append('C:\\Users\\randysuen\\Neural-Network')
-
-
-
 """
 This file consists three parts:
     The first is the action-value function, Q, and state-value function, V, for policy pi.
@@ -14,7 +5,6 @@ This file consists three parts:
     The last is the model itself which uses the learning algorith to make decision.
     
 """
-
 
 from abc import ABC, abstractmethod
 # This class should be a double keys one value dictionary.
@@ -31,15 +21,15 @@ class ReinforcementLearningModel(ABC):
         self.gamma = gamma
         
     @abstractmethod
-    def Predict(self):
+    def predict(self):
         raise NotImplementedError
 
     @abstractmethod
-    def Fit(self):
+    def fit(self):
         raise NotImplementedError
 
     @abstractmethod
-    def _Learn(self):
+    def _learn(self):
         raise NotImplementedError
         
     
