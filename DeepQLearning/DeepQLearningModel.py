@@ -5,7 +5,7 @@ import tensorflow as tf
 from NeuralNetwork import NeuralNetworkModel as NNM
 from NeuralNetwork import NeuralNetworkUnit as NNU
 from NeuralNetwork import NeuralNetworkLoss as NNL
-from ReinforcementLearning import ReinforcementLearningModel as RLM
+from ReinforcementLearning.Core import ReinforcementLearningModel as RLM
 import matplotlib.pyplot as plt
 
 
@@ -117,7 +117,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
 
         # if the environment has specific action action format.
         action = self.env.dealaction(np.argmax(actions))
-        
+
         try:
             if np.random.uniform(0, 1) < (1 - epsilon + epsilon / len(self.env.actions_space)):
                 return action

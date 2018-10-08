@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-import ReinforcementLearning.ReinforcementLearningModel as RLM
+import ReinforcementLearning.Core.ReinforcementLearningModel as RLM
 import NeuralNetwork.NeuralNetworkModel as NNM
 import NeuralNetwork.NeuralNetworkUnit as NNU
 import NeuralNetwork.NeuralNetworkLoss as NNL
