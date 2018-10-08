@@ -6,6 +6,7 @@ import sys
 
 import ReinforcementLearning.Core.ReinforcementLearningModel as RLM
 
+
 class QTable():
     def __init__(self,states,actions):
         self.QTable = pd.DataFrame(index=states,columns=actions)        
@@ -24,7 +25,7 @@ class QLearning(RLM.ReinforcementLearningModel):
                 if done:
                     break
                 action = self.predict(state,self.epsilon)
-                new_state, r, done, _  = self.env.Step(action)
+                new_state, r, done, _= self.env.Step(action)
                 new_action = self.predict(state)
                 self.Q[state, action] = self.Q[state, action] + self.learning_rate * \
                                         (r + self.decay_rate * self.Q[new_state, new_action] - self.Q[state, action])
