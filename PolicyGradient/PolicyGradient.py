@@ -45,9 +45,17 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
                                         input_dim=self.env.features_size)
                 self.policy_model.build(NNU.NeuronLayer(hidden_dim=30, transfer_fun=None))
                 self.policy_model.build(NNU.SoftMaxLayer())
+                self.policy_model.action_state_value = tf.placeholder(shape=[None, ])
+
             self.policy_model.mini_batch = self.batch_size
             self.policy_model.compile(optimizer=tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate),
-                                      loss_fun=NNL.NeuralNetworkLoss.crossentropy)
+                                      loss_fun=NNL.NeuralNetworkLoss.crossentropy, loss_and_optimize=False)
+            with self.graph.as_default():
+                self.policy_model.target = tf.placeholder(shape=[None,])
+                self.policy_model.loss = self.policy_model.loss_fun(output=self.policy_model.output,
+                                                                    target=self.policy_model.target,
+                                                                    batch_size=self.policy_model.mini_batch)
+                self.policy_model.loss = tf.reduce_mean(self.policy_model.loss * self.policy_model.action_state_value)
 
     def predict(self, state, epsilon=None):
         prob_weights = self.sess.run(fetches=self.policy_model.output, feed_dict={self.policy_model.input: state})
