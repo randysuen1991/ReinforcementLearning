@@ -12,6 +12,9 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
         self.graph = tf.Graph()
         self.sess = tf.Session(graph=self.graph)
         self.batch_size = batch_size
+        self.episode_states = list()
+        self.episode_rewards = list()
+        self.episode_actions = list()
 
     def fit(self):
         for i in range(self.env.episodes_size):
@@ -24,7 +27,15 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
                     rewards_sum = sum()
 
     def _learn(self):
-        pass
+        discounted_ep_rs_norm = self._discount_and_norm_rewards()
+        loss, _ = self.sess.run(fetches=[self.policy_model.loss, self.policy_model.train],
+                                feed_dict={self.policy_model.input:
+                                           })
+
+    def _store_transition(self, state, action, reward):
+        self.episode_states.append(state)
+        self.episode_actions.append(action)
+        self.episode_rewards.append(reward)
 
     def _construct_default_models(self):
         with self.graph.as_default():
@@ -44,4 +55,4 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
         return action
 
     def _discount_and_norm_rewards(self):
-        pass
+        return 0

@@ -9,7 +9,7 @@ import ReinforcementLearning.Core.ReinforcementLearningModel as RLM
 
 class QTable():
     def __init__(self,states,actions):
-        self.QTable = pd.DataFrame(index=states,columns=actions)        
+        self.QTable = pd.DataFrame(index=states, columns=actions)
 
 
 class QLearning(RLM.ReinforcementLearningModel):
