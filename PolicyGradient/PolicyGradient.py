@@ -29,7 +29,9 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
     def _learn(self):
         discounted_ep_rs_norm = self._discount_and_norm_rewards()
         loss, _ = self.sess.run(fetches=[self.policy_model.loss, self.policy_model.train],
-                                feed_dict={self.policy_model.input:
+                                feed_dict={self.policy_model.input: np.vstack(self.episode_states),
+                                           self.policy_model.target: np.hstack(self.episode_actions),
+                                           self.policy_model.action_state_value: discounted_ep_rs_norm
                                            })
 
     def _store_transition(self, state, action, reward):
@@ -51,11 +53,20 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
             self.policy_model.compile(optimizer=tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate),
                                       loss_fun=NNL.NeuralNetworkLoss.crossentropy, loss_and_optimize=False)
             with self.graph.as_default():
-                self.policy_model.target = tf.placeholder(shape=[None,])
+                self.policy_model.target = tf.placeholder(shape=[None, ])
                 self.policy_model.loss = self.policy_model.loss_fun(output=self.policy_model.output,
                                                                     target=self.policy_model.target,
-                                                                    batch_size=self.policy_model.mini_batch)
+                                                                    batch_size=1,
+                                                                    axis=1)
                 self.policy_model.loss = tf.reduce_mean(self.policy_model.loss * self.policy_model.action_state_value)
+                if self.policy_model.update:
+                    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+                    with tf.control_dependencies(update_ops):
+                        grads_and_vars = self.policy_model.optimizer.compute_gradients(self.policy_model.loss)
+                        self.policy_model.train = self.policy_model.optimizer.apply_gradients(grads_and_vars)
+                else:
+                    grads_and_vars = self.policy_model.optimizer.compute_gradients(self.policy_model.loss)
+                    self.policy_model.train = self.policy_model.optimizer.apply_gradients(grads_and_vars)
 
     def predict(self, state, epsilon=None):
         prob_weights = self.sess.run(fetches=self.policy_model.output, feed_dict={self.policy_model.input: state})
