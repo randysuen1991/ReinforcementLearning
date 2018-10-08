@@ -21,7 +21,7 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
                 self.env.actions.append(action)
                 new_state, reward, done = self.env.step()
                 if done:
-                    pass
+                    rewards_sum = sum()
 
     def _learn(self):
         pass
@@ -39,6 +39,9 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
                                       loss_fun=NNL.NeuralNetworkLoss.crossentropy)
 
     def predict(self, state, epsilon=None):
-        prob_weights = self.sess.run(fetches=self.policy_model.output, feed_dict={})
+        prob_weights = self.sess.run(fetches=self.policy_model.output, feed_dict={self.policy_model.input: state})
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())
         return action
+
+    def _discount_and_norm_rewards(self):
+        pass
