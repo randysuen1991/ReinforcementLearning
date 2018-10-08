@@ -20,7 +20,7 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
             self._construct_default_models()
             with self.graph.as_default():
                 self.sess.run(tf.global_variables_initializer())
-                
+
     def fit(self, show_graph=True):
         for i in range(self.env.episodes_size):
             state = self.env.Reset(iteration=i)
