@@ -15,9 +15,13 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
 
     def fit(self):
         for i in range(self.env.episodes_size):
-            step = 0
             state = self.env.Reset(iteration=i)
-
+            while True:
+                action = self.predict(state, self.epsilon)
+                self.env.actions.append(action)
+                new_state, reward, done = self.env.step()
+                if done:
+                    pass
 
     def _learn(self):
         pass
@@ -32,7 +36,7 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
                 self.policy_model.build(NNU.SoftMaxLayer())
             self.policy_model.mini_batch = self.batch_size
             self.policy_model.compile(optimizer=tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate),
-                                      loss_fun=NNL.NeuralNetworkLoss.)
+                                      loss_fun=NNL.NeuralNetworkLoss.crossentropy)
 
     def predict(self, state, epsilon=None):
         prob_weights = self.sess.run(fetches=self.policy_model.output, feed_dict={})
