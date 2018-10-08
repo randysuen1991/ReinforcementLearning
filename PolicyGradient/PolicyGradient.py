@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 import ReinforcementLearning.Core.ReinforcementLearningModel as RLM
 import NeuralNetwork.NeuralNetworkModel as NNM
 import NeuralNetwork.NeuralNetworkUnit as NNU
@@ -17,8 +18,10 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
         self.episode_actions = list()
         if default:
             self._construct_default_models()
-
-    def fit(self):
+            with self.graph.as_default():
+                self.sess.run(tf.global_variables_initializer())
+                
+    def fit(self, show_graph=True):
         for i in range(self.env.episodes_size):
             state = self.env.Reset(iteration=i)
             while True:
@@ -26,7 +29,20 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
                 self.env.actions.append(action)
                 new_state, reward, done = self.env.step()
                 if done:
-                    rewards_sum = sum()
+                    rewards_sum = sum(self.episode_rewards)
+                    if 'running_reward' not in globals():
+                        running_reward = rewards_sum
+                    else:
+                        running_reward = running_reward * 0.99 + rewards_sum * 0.01
+                    print("episode:", i, "  reward:", int(running_reward))
+                value = self._learn()
+
+                if i == 0:
+                    plt.plot(value)
+                    plt.xlabel('episode steps')
+                    plt.ylabel('normalized state-action value')
+                    plt.show()
+                break
 
     def _learn(self):
         discounted_episode_rewards_norm = self._discount_and_norm_rewards()
@@ -35,6 +51,8 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
                                            self.policy_model.target: np.hstack(self.episode_actions),
                                            self.policy_model.action_state_value: discounted_episode_rewards_norm
                                            })
+        self.episode_rewards, self.episode_actions, self.episode_states = list(), list(), list()
+        return discounted_episode_rewards_norm
 
     def _store_transition(self, state, action, reward):
         self.episode_states.append(state)
