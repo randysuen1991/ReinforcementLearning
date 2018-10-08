@@ -23,7 +23,7 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
 
     def fit(self, show_graph=True):
         for i in range(self.env.episodes_size):
-            state = self.env.Reset(iteration=i)
+            state = self.env.reset(iteration=i)
             while True:
                 action = self.predict(state, self.epsilon)
                 self.env.actions.append(action)
@@ -37,7 +37,7 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
                     print("episode:", i, "  reward:", int(running_reward))
                 value = self._learn()
 
-                if i == 0:
+                if i == 0 and show_graph:
                     plt.plot(value)
                     plt.xlabel('episode steps')
                     plt.ylabel('normalized state-action value')
