@@ -21,7 +21,7 @@ class ReinforcementLearningModel(ABC):
         self.gamma = gamma
         
     @abstractmethod
-    def predict(self):
+    def predict(self, state, epsilon=None):
         raise NotImplementedError
 
     @abstractmethod

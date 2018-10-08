@@ -114,12 +114,15 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
         actions = self.sess.run(fetches=self.eval_model.output,
                                 feed_dict={self.eval_model.input: state,
                                            self.eval_model.on_train: False})
-        action = self.env.DealAction(np.argmax(actions))
+
+        # if the environment has specific action action format.
+        action = self.env.dealaction(np.argmax(actions))
+        
         try:
             if np.random.uniform(0, 1) < (1 - epsilon + epsilon / len(self.env.actions_space)):
                 return action
             else:
-                actions_list = copy.copy(self.env.actions_space)
+                actions_list = cp.copy(self.env.actions_space)
                 actions_list.remove(action)
                 return random.choice(actions_list)
         except TypeError:
@@ -164,13 +167,13 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
     def backtest(self, states):
         actions = list()
         for state in states:
-            action = self.Predict(state)
+            action = self.predict(state)
             actions.append(action)
         return actions
 
     def print_output_detail(self, states):
         for state in states:
-            self.eval_model.Print_Output_Detail(state, sess=self.sess)
+            self.eval_model.print_output_detail(state, sess=self.sess)
 
 
 class DoubleDeepQLearning(DeepQLearning):
