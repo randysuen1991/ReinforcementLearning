@@ -7,7 +7,7 @@ import NeuralNetwork.NeuralNetworkLoss as NNL
 
 
 class PolicyGradient(RLM.ReinforcementLearningModel):
-    def __init__(self, env, gamma=0.8, batch_size=40, decay_rate=0.1, learning_rate=0.01, epsilon=0.05):
+    def __init__(self, env, gamma=0.8, batch_size=1, decay_rate=0.1, learning_rate=0.01, epsilon=0.05, default=True):
         super().__init__(env, gamma=gamma, decay_rate=decay_rate, learning_rate=learning_rate, epsilon=epsilon)
         self.graph = tf.Graph()
         self.sess = tf.Session(graph=self.graph)
@@ -15,6 +15,8 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
         self.episode_states = list()
         self.episode_rewards = list()
         self.episode_actions = list()
+        if default:
+            self._construct_default_models()
 
     def fit(self):
         for i in range(self.env.episodes_size):
@@ -27,11 +29,11 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
                     rewards_sum = sum()
 
     def _learn(self):
-        discounted_ep_rs_norm = self._discount_and_norm_rewards()
+        discounted_episode_rewards_norm = self._discount_and_norm_rewards()
         loss, _ = self.sess.run(fetches=[self.policy_model.loss, self.policy_model.train],
                                 feed_dict={self.policy_model.input: np.vstack(self.episode_states),
                                            self.policy_model.target: np.hstack(self.episode_actions),
-                                           self.policy_model.action_state_value: discounted_ep_rs_norm
+                                           self.policy_model.action_state_value: discounted_episode_rewards_norm
                                            })
 
     def _store_transition(self, state, action, reward):
@@ -74,4 +76,12 @@ class PolicyGradient(RLM.ReinforcementLearningModel):
         return action
 
     def _discount_and_norm_rewards(self):
-        return 0
+        discounted_episode_rewards = np.zeros_like(self.episode_rewards)
+        running_add = 0
+        for t in reversed(range(len(self.episode_rewards))):
+            running_add = running_add * self.gamma + self.episode_rewards[t]
+            discounted_episode_rewards[t] = running_add
+
+        discounted_episode_rewards -= np.mean(discounted_episode_rewards)
+        discounted_episode_rewards /= np.std(discounted_episode_rewards)
+        return discounted_episode_rewards
