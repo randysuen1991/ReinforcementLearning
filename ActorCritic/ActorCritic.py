@@ -41,6 +41,8 @@ class ActorCritic(RLM.ReinforcementLearningModel):
                 self.critic_model.td_error = \
                     self.critic_model.reward + self.gamma * self.critic_model.target - self.critic_model.output
                 self.critic_model.loss = tf.square(self.critic_model.td_error)
+                self.critic_model.train = tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate)
+
 
     def _learn(self):
         pass
