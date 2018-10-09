@@ -38,10 +38,12 @@ class ActorCritic(RLM.ReinforcementLearningModel):
                 self.critic_model = NNM.NeuralNetworkModel(graph=self.graph)
                 self.critic_model.build(NNU.NeuronLayer(hidden_dim=10), input_dim=self.env.features_dim)
                 self.critic_model.build(NNU.NeuronLayer(hidden_dim=1))
-                self.critic_model.td_error = \
-                    self.critic_model.reward + self.gamma * self.critic_model.target - self.critic_model.output
-                self.critic_model.loss = tf.square(self.critic_model.td_error)
-                self.critic_model.train = tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate)
+                self.critic_model.compile(optimizer=tf.train.GradientDescentOptimizer,
+                                          loss_fun=NNL.NeuralNetworkLoss.tdsquared,
+                                          reward=self.critic_model.reward,
+                                          gamma=self.gamma)
+                
+
 
 
     def _learn(self):
