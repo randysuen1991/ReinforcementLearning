@@ -42,7 +42,7 @@ class ActorCritic(RLM.ReinforcementLearningModel):
                                           loss_fun=NNL.NeuralNetworkLoss.tdsquared,
                                           reward=self.critic_model.reward,
                                           gamma=self.gamma)
-                
+
 
 
 
