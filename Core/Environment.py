@@ -6,8 +6,9 @@ from abc import ABC, abstractmethod
 
 # This is an abstract class for environment. The environments in all the cases would follow this class.
 class Environment(ABC):
-    def __init__(self):
-        pass
+    def __init__(self, actions_num, features_dim):
+        self.actions_num = actions_num
+        self.features_dim = features_dim
 
     @abstractmethod
     def reset(self):
