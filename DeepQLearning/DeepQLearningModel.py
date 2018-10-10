@@ -88,11 +88,11 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
     def fit(self, plot_cost=False):
         for i in range(self.env.episodes_size):
             step = 0
-            state = self.env.Reset(iteration=i)
+            state = self.env.reset(iteration=i)
             while True:
                 action = self.predict(state, self.epsilon)
                 self.env.actions.append(action)
-                new_state, reward, done = self.env.Step()
+                new_state, reward, done = self.env.step()
                 self._store_transition(state.ravel(), action, reward, new_state.ravel())
                 if done:
                     action = self.predict(new_state, self.epsilon)

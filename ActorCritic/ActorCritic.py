@@ -14,6 +14,9 @@ class ActorCritic(RLM.ReinforcementLearningModel):
         self.graph = tf.Graph()
         self.sess = tf.Session(self.graph)
         self.dtype = dtype
+        self.state = None
+        self.new_state = None
+        self.reward = None
         if default:
             self._construct_default_model()
             with self.graph.as_default():
@@ -43,8 +46,7 @@ class ActorCritic(RLM.ReinforcementLearningModel):
                                           reward=self.critic_model.reward,
                                           gamma=self.gamma)
 
-
-
-
     def _learn(self):
-        pass
+        # critic model learns first.
+        td_error = self.sess.run(fetches=[self.critic_model.], feed_dict={})
+
