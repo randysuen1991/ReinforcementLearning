@@ -12,8 +12,8 @@ class Environment(ABC):
 
     @abstractmethod
     def reset(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def step(self, action):
-        raise NotImplementedError()
+        raise NotImplementedError
