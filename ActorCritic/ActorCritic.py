@@ -29,9 +29,9 @@ class ActorCritic(RLM.ReinforcementLearningModel):
             while True:
                 action = self.predict(state)
                 self.env.actions.append(action)
-                # In cases like financial markets, the action would give no impact to the result of the next step.
+                # In cases like financial environments, the action would give no impact to the result of the next step.
                 new_state, reward, done = self.env.step()
-                self._learn(state, reward, new_state)
+                self._learn(state, reward, new_state, action)
                 state = new_state
                 step += 1
                 if done:
@@ -49,8 +49,10 @@ class ActorCritic(RLM.ReinforcementLearningModel):
                 self.actor_model.action = tf.placeholder(dtype=self.dtype, shape=None)
                 self.actor_model.build(NNU.NeuronLayer(hidden_dim=20), input_dim=self.env.features_dim)
                 self.actor_model.build(NNU.NeuronLayer(hidden_dim=self.env.actions_num))
-                log_prob = tf.log(self.actor_model.output[0, self.actor_model.action])
-                self.actor_model.exp_value = tf.reduct_mean(log_prob * self.actor_model.td_error)
+                self.actor_model.compile(optimizer=tf.train.GradientDescentOptimizer,
+                                         loss_fun=NNL.NeuralNetworkLoss.exploss,
+                                         action=self.actor_model.action,
+                                         td_error=self.actor_model.td_error)
 
             with tf.variable_scope('critic'):
                 self.critic_model = NNM.NeuralNetworkModel(graph=self.graph)
@@ -63,10 +65,15 @@ class ActorCritic(RLM.ReinforcementLearningModel):
                                           reward=self.critic_model.reward,
                                           gamma=self.gamma)
 
-    def _learn(self, state, reward, new_state):
+    def _learn(self, state, reward, new_state, action):
         # critic model learns first.
         value = self.sess.run(fetches=self.critic_model.output, feed_dict={self.critic_model.input: new_state})
         td_error, _ = self.sess.run(fetches=[self.critic_model.loss, self.critic_model.train],
-                                    feed_dict={self.critic_model.input: state, self.critic_model.value: value,
+                                    feed_dict={self.critic_model.input: state,
+                                               self.critic_model.value: value,
                                                self.reward: reward})
-        self.sess.run(fetches=[self.actor_model.], feed_dict={})
+        loss, _ = self.sess.run(fetches=[self.actor_model.loss, self.actor_model.train],
+                                feed_dict={self.actor_model.input: state,
+                                           self.actor_model.action: action,
+                                           self.actor_model.td_error: td_error})
+        return loss
