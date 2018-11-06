@@ -38,7 +38,7 @@ class ActorCritic(RLM.ReinforcementLearningModel):
                     break
 
     def predict(self, state):
-        probs = self.sess.run(fetches=self.actor_model.output, feed_dict={self.actor_model.input:state})
+        probs = self.sess.run(fetches=self.actor_model.output, feed_dict={self.actor_model.input: state})
         return np.random.choice(np.arange(probs.shape[1]), p=probs.ravel())
 
     def _construct_default_model(self):
@@ -77,3 +77,25 @@ class ActorCritic(RLM.ReinforcementLearningModel):
                                            self.actor_model.action: action,
                                            self.actor_model.td_error: td_error})
         return loss
+
+
+class DeepDeterministicPolicyGradient(ActorCritic):
+    def __init__(self, env, gamma=0.8, batch_size=40, decay_rate=0.1, learning_rate=0.01, epsilon=0.05,
+                 dtype=tf.float32, default=True):
+        super().__init__(env, gamma=gamma, decay_rate=decay_rate, learning_rate=learning_rate, epsilon=epsilon,
+                         dtype=dtype, default=default)
+        
+    def fit(self):
+        for i in range(self.env.episodes_size):
+            step = 0
+            state = self.env.reset()
+            while True:
+                action = self.predict(state)
+                self.env.actions.append(action)
+                # In cases like financial environments, the action would give no impact to the result of the next step.
+                new_state, reward, done = self.env.step()
+                self._learn(state, reward, new_state, action)
+                state = new_state
+                step += 1
+                if done:
+                    break
