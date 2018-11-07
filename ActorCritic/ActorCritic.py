@@ -65,7 +65,7 @@ class ActorCritic(RLM.ReinforcementLearningModel):
                                           reward=self.critic_model.reward,
                                           gamma=self.gamma)
 
-    def _learn(self, state, reward, new_state, action):
+    def _learn(self, state, action, reward, new_state):
         # critic model learns first.
         value = self.sess.run(fetches=self.critic_model.output, feed_dict={self.critic_model.input: new_state})
         td_error, _ = self.sess.run(fetches=[self.critic_model.loss, self.critic_model.train],
@@ -89,7 +89,7 @@ class DeepDeterministicPolicyGradient(ActorCritic):
         self.memory = np.zeros((capacity, 2 * self.env.features_dim + self.env.actions_num + 1))
         self.e_params = None
         self.t_params = None
-        
+
     def fit(self):
         for i in range(self.env.episodes_size):
             step = 0
@@ -99,8 +99,16 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                 self.env.actions.append(action)
                 # In cases like financial environments, the action would give no impact to the result of the next step.
                 new_state, reward, done = self.env.step()
-                self._learn(state, reward, new_state, action)
+                self._store_transition(state, action, reward, new_state)
+                if self.memory_counter > self.capacity:
+                    samples = self._sample(self.batch_size)
+                    s_state = samples[:, :self.env.features_dim]
+                    s_action = samples[:, self.env.features_dim: self.env.features_dim + self.env.actions_num]
+                    s_reward = samples[:, -self.env.features_dim - 1: -self.env.features_dim]
+                    s_new_state = samples[:, -self.env.features_dim:]
+                    self._learn(s_state, s_action, s_reward, s_new_state)
                 state = new_state
+                
                 step += 1
                 if done:
                     break
@@ -112,10 +120,13 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                     self.actor_eval_model = NNM.NeuralNetworkModel(graph=self.graph)
                     self.actor_eval_model.build(NNU.NeuronLayer(hidden_dim=30, trainable=True),
                                                 input_dim=self.env.features_dim)
+                    self.actor_eval_model.build(NNU.NeuronLayer(hidden_dim=self.env.actions_num, trainable=True))
+
                 with tf.variable_scope('targ'):
                     self.actor_targ_model = NNM.NeuralNetworkModel(graph=self.graph)
                     self.actor_targ_model.build(NNU.NeuronLayer(hidden_dim=30, trainable=False),
                                                 input_dim=self.env.features_dim)
+                    self.actor_targ_model.build(NNU.NeuronLayer(hidden_dim=self.env.actions_num, trainable=False))
 
             self.e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='actor/eval')
             self.t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='actor/targ')
