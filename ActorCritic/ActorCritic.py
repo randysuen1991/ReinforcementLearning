@@ -189,6 +189,8 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                 # dq/da * da/dp
                 self.policy_grads = tf.gradients(ys=self.actor_eval_model.output, xs=self.actor_e_params,
                                                  grad_ys=self.critic_action_grads)
+                opt = tf.train.AdamOptimizer(-self.learning_rate)
+                self.actor_train_op = opt.apply_gradients(zip(self.policy_grads, self.actor_e_params))
 
     def predict(self, state):
         return self.sess.run(self.actor_eval_model.output, feed_dict={self.actor_eval_model.input: state})[0]
@@ -198,7 +200,7 @@ class DeepDeterministicPolicyGradient(ActorCritic):
         self.sess.run(self.critic_train_op, feed_dict={})
 
         # Actor learns then.
-        self.sess.run()
+        self.sess.run(self.actor_train_op, feed_dict={})
 
     def _store_transition(self, state, action, reward, new_state):
         transition = np.hstack((state, action, reward, new_state))
