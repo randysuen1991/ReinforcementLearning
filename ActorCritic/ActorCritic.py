@@ -197,7 +197,10 @@ class DeepDeterministicPolicyGradient(ActorCritic):
 
     def _learn(self, state, action, reward, new_state):
         # Critic learns first.
-        self.sess.run(self.critic_train_op, feed_dict={})
+        self.sess.run(self.critic_train_op, feed_dict={self.critic_eval_model.input_state: state,
+                                                       self.critic_eval_model.input_action: action,
+                                                       self.reward: reward
+                                                       })
 
         # Actor learns then.
         self.sess.run(self.actor_train_op, feed_dict={})
