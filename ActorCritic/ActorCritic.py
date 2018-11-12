@@ -87,8 +87,10 @@ class DeepDeterministicPolicyGradient(ActorCritic):
         self.memory_counter = 0
         self.capacity = capacity
         self.memory = np.zeros((capacity, 2 * self.env.features_dim + self.env.actions_num + 1))
-        self.e_params = None
-        self.t_params = None
+        self.actor_e_params = None
+        self.actor_t_params = None
+        self.critic_e_params = None
+        self.critic_t_params = None
 
     def fit(self):
         for i in range(self.env.episodes_size):
@@ -108,7 +110,7 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                     s_new_state = samples[:, -self.env.features_dim:]
                     self._learn(s_state, s_action, s_reward, s_new_state)
                 state = new_state
-                
+
                 step += 1
                 if done:
                     break
@@ -128,14 +130,47 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                                                 input_dim=self.env.features_dim)
                     self.actor_targ_model.build(NNU.NeuronLayer(hidden_dim=self.env.actions_num, trainable=False))
 
-            self.e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='actor/eval')
-            self.t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='actor/targ')
+                self.actor_e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='actor/eval')
+                self.actor_t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='actor/targ')
 
             with tf.variable_scope('critic'):
                 with tf.variable_scope('eval'):
-                    self.critic_eval_model = NNM.NeuralNetworkModel(graph=self.graph)
+                    self.critic_eval_model_state = NNM.NeuralNetworkModel(graph=self.graph)
+                    self.critic_eval_model_state.build(NNU.NeuronLayer(hidden_dim=10, trainable=True),
+                                                       input_dim=self.env.features_dim)
+                    self.critic_eval_model_action = NNM.NeuralNetworkModel(graph=self.graph)
+                    self.critic_eval_model_action.build(NNU.NeuronLayer(hidden_dim=10, trainable=True),
+                                                        input_dim=self.env.features_dim)
+
+                    self.critic_eval_model_state.action = self.actor_eval_model.output
+
+                    self.critic_eval_model = self.critic_eval_model_action + self.critic_eval_model_state
+                    self.critic_eval_model.input_state = self.critic_eval_model_state.input
+                    self.critic_eval_model.input_action =
+
                 with tf.variable_scope('targ'):
-                    self.critic_targ_model = NNM.NeuralNetworkModel(graph=self.graph)
+                    self.critic_targ_model_state = NNM.NeuralNetworkModel(graph=self.graph)
+                    self.critic_targ_model_state.build(NNU.NeuronLayer(hidden_dim=10, trainable=False),
+                                                       input_dim=self.env.features_dim)
+                    self.critic_targ_model_action = NNM.NeuralNetworkModel(graph=self.graph)
+                    self.critic_targ_model_action.build(NNU.NeuronLayer(hidden_dim=10, trainable=False),
+                                                        input_dim=self.env.features_dim)
+                    self.critic_targ_model_state.action = self.actor_targ_model.output
+
+                    self.critic_targ_model = self.critic_targ_model_action + self.critic_targ_model_state
+
+                self.critic_e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='critic/eval')
+                self.critic_t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='critic/targ')
+
+                with tf.variable_scope('a_grad'):
+                    pass
+                with tf.variable_scope(''):
+                    pass
+
+            # Connect the actor to the critic.
+            with tf.variable_scope('policy_grads'):
+                # dq/da * da/dp
+                self.policy_grads = tf.gradient(ys=self.actor_eval_model.output, xs=self.e_params, )
 
     def predict(self, state):
         probs = self.sess.run(fetches=self.actor_model.output, feed_dict={self.actor_model.input: state})
