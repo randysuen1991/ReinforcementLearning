@@ -142,11 +142,12 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                     self.critic_eval_model_action.build(NNU.NeuronLayer(hidden_dim=10, trainable=True),
                                                         input_dim=self.env.features_dim)
 
-                    self.critic_eval_model_state.action = self.actor_eval_model.output
+                    self.critic_eval_model_action.input = self.actor_eval_model.output
 
+                    # integrate all the models into one.
                     self.critic_eval_model = self.critic_eval_model_action + self.critic_eval_model_state
                     self.critic_eval_model.input_state = self.critic_eval_model_state.input
-                    self.critic_eval_model.input_action =
+                    self.critic_eval_model.input_action = self.critic_eval_model_action.input
 
                 with tf.variable_scope('targ'):
                     self.critic_targ_model_state = NNM.NeuralNetworkModel(graph=self.graph)
@@ -155,9 +156,13 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                     self.critic_targ_model_action = NNM.NeuralNetworkModel(graph=self.graph)
                     self.critic_targ_model_action.build(NNU.NeuronLayer(hidden_dim=10, trainable=False),
                                                         input_dim=self.env.features_dim)
+
                     self.critic_targ_model_state.action = self.actor_targ_model.output
 
+                    # integrate all the models into one.
                     self.critic_targ_model = self.critic_targ_model_action + self.critic_targ_model_state
+                    self.critic_targ_model.input_state = self.critic_targ_model_state.input
+                    self.critic_targ_model.input_action = self.critic_targ_model_action.input
 
                 self.critic_e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='critic/eval')
                 self.critic_t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='critic/targ')
