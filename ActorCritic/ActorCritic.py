@@ -98,12 +98,14 @@ class DeepDeterministicPolicyGradient(ActorCritic):
         for i in range(self.env.episodes_size):
             step = 0
             state = self.env.reset()
+            episode_reward = 0
             while True:
                 action = self.predict(state)
                 self.env.actions.append(action)
                 # In cases like financial environments, the action would give no impact to the result of the next step.
                 new_state, reward, done = self.env.step()
                 self._store_transition(state, action, reward, new_state)
+
                 if self.memory_counter > self.capacity:
                     samples = self._sample(self.batch_size)
                     s_state = samples[:, :self.env.features_dim]
@@ -111,9 +113,12 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                     s_reward = samples[:, -self.env.features_dim - 1: -self.env.features_dim]
                     s_new_state = samples[:, -self.env.features_dim:]
                     self._learn(s_state, s_action, s_reward, s_new_state)
+
                 state = new_state
 
                 step += 1
+                episode_reward += reward
+
                 if done:
                     break
 
@@ -188,7 +193,7 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                                                  grad_ys=self.critic_action_grads)
                 opt = tf.train.AdamOptimizer(-self.learning_rate)
                 self.actor_train_op = opt.apply_gradients(zip(self.policy_grads, self.actor_e_params))
-                
+
     def predict(self, state):
         return self.sess.run(self.actor_eval_model.output, feed_dict={self.actor_eval_model.input: state})[0]
 
