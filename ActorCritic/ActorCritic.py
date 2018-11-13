@@ -150,8 +150,6 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                     self.critic_eval_model = self.critic_eval_model_action + self.critic_eval_model_state
                     self.critic_eval_model.build(NNU.Relu())
                     self.critic_eval_model.build(NNU.NeuronLayer(hidden_dim=1, trainable=True), input_dim=10)
-                    self.critic_eval_model.input_state = self.critic_eval_model_state.input
-                    self.critic_eval_model.input_action = self.critic_eval_model_action.input
 
                 with tf.variable_scope('targ'):
                     self.critic_targ_model_state = NNM.NeuralNetworkModel(graph=self.graph)
@@ -167,8 +165,6 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                     self.critic_targ_model = self.critic_targ_model_action + self.critic_targ_model_state
                     self.critic_targ_model.build(NNU.Relu())
                     self.critic_targ_model.build(NNU.NeuronLayer(hidden_dim=1, trainable=False), input_dim=10)
-                    self.critic_targ_model.input_state = self.critic_targ_model_state.input
-                    self.critic_targ_model.input_action = self.critic_targ_model_action.input
 
                 self.critic_e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='critic/eval')
                 self.critic_t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='critic/targ')
@@ -182,7 +178,8 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                     self.critic_train_op = tf.train.AdamOptimizer(self.learning_rate).minimize(critic_loss)
 
                 with tf.variable_scope('a_grad'):
-                    self.critic_action_grads = tf.gradients(self.critic_eval_model.output, self.actor_eval_model.output)[0]
+                    self.critic_action_grads = tf.gradients(self.critic_eval_model.output,
+                                                            self.actor_eval_model.output)[0]
 
             # Connect the actor to the critic.
             with tf.variable_scope('policy_grads'):
@@ -191,19 +188,20 @@ class DeepDeterministicPolicyGradient(ActorCritic):
                                                  grad_ys=self.critic_action_grads)
                 opt = tf.train.AdamOptimizer(-self.learning_rate)
                 self.actor_train_op = opt.apply_gradients(zip(self.policy_grads, self.actor_e_params))
-
+                
     def predict(self, state):
         return self.sess.run(self.actor_eval_model.output, feed_dict={self.actor_eval_model.input: state})[0]
 
     def _learn(self, state, action, reward, new_state):
         # Critic learns first.
-        self.sess.run(self.critic_train_op, feed_dict={self.critic_eval_model.input_state: state,
-                                                       self.critic_eval_model.input_action: action,
-                                                       self.reward: reward
+        self.sess.run(self.critic_train_op, feed_dict={self.critic_eval_model_state.input: state,
+                                                       self.critic_eval_model_action.input: action,
+                                                       self.reward: reward,
+                                                       self.critic_targ_model_state: new_state
                                                        })
 
         # Actor learns then.
-        self.sess.run(self.actor_train_op, feed_dict={})
+        self.sess.run(self.actor_train_op, feed_dict={self.actor_eval_model.input: state})
 
     def _store_transition(self, state, action, reward, new_state):
         transition = np.hstack((state, action, reward, new_state))
