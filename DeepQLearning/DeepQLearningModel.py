@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 class DeepQLearning(RLM.ReinforcementLearningModel):
     def __init__(self, env, memory_size=50, batch_size=40,
                  replace_target_size=100, learn_size=30, gamma=0.8,
-                 decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
+                 decay_rate=0.1, learning_rate=0.001, epsilon=0.5, default=True):
         super().__init__(env=env, gamma=gamma, decay_rate=decay_rate, learning_rate=learning_rate, epsilon=epsilon)
         self.graph = tf.Graph()
         self.sess = tf.Session(graph=self.graph)
@@ -179,7 +179,7 @@ class DeepQLearning(RLM.ReinforcementLearningModel):
 class DoubleDeepQLearning(DeepQLearning):
     def __init__(self, env, memory_size=50, batch_size=40,
                  replace_target_size=100, learn_size=30, gamma=0.8,
-                 decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
+                 decay_rate=0.1, learning_rate=0.001, epsilon=0.5, default=True):
         
         super().__init__(env=env, memory_size=memory_size, batch_size=batch_size,
                          replace_target_size=replace_target_size, learn_size=learn_size, gamma=gamma,
@@ -222,6 +222,7 @@ class DoubleDeepQLearning(DeepQLearning):
         self.cost_history.append(self.cost)
 
 
+# not yet done.
 class DeepQLearningPrioReply(DeepQLearning):
     def __init__(self, env, memory_size=50, batch_size=40, replace_target_size=100,
                  learn_size=30, gamma=0.8, decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
@@ -249,8 +250,9 @@ class DeepQLearningPrioReply(DeepQLearning):
         index = self.memory_counter % self.memory_size
         self.memory[index, :] = transition
         self.memory_counter += 1
-     
 
+
+# not yet done.
 class DoubleDeepQLearningPrioReply(DoubleDeepQLearning, DeepQLearningPrioReply):
     def __init__(self, env, memory_size=50, batch_size=40, replace_target_size=100,
                  learn_size=30, gamma=0.8, decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
@@ -260,7 +262,7 @@ class DoubleDeepQLearningPrioReply(DoubleDeepQLearning, DeepQLearningPrioReply):
         
 class DuelingDeepQLearning(DeepQLearning):
     def __init__(self, env, memory_size=50, batch_size=40, replace_target_size=100,
-                 learn_size=30, gamma=0.8, decay_rate=0.1, learning_rate=0.1, epsilon=0.5, default=True):
+                 learn_size=30, gamma=0.8, decay_rate=0.1, learning_rate=0.001, epsilon=0.5, default=True):
         super().__init__(env, memory_size, batch_size, replace_target_size, learn_size, gamma,
                          decay_rate, learning_rate, epsilon, default)
 
